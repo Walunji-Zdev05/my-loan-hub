@@ -207,3 +207,17 @@ export const getLoanPortfolio = () => [
   { name: 'Emergency Loan', value: 55000, color: 'hsl(38, 92%, 50%)' },
   { name: 'Asset Finance', value: 150000, color: 'hsl(158, 64%, 40%)' },
 ];
+
+export const getLoanStatusDistribution = () => {
+  const statusCounts = loans.reduce((acc, loan) => {
+    acc[loan.status] = (acc[loan.status] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  return [
+    { name: 'Active', value: statusCounts['active'] || 0, color: 'hsl(173, 58%, 39%)' },
+    { name: 'Paid', value: statusCounts['paid'] || 0, color: 'hsl(158, 64%, 40%)' },
+    { name: 'Overdue', value: statusCounts['overdue'] || 0, color: 'hsl(0, 84%, 60%)' },
+    { name: 'Pending', value: statusCounts['pending'] || 0, color: 'hsl(38, 92%, 50%)' },
+  ].filter(item => item.value > 0);
+};
