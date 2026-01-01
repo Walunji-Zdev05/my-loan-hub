@@ -25,10 +25,10 @@ export default function BorrowerDashboard() {
     .slice(0, 5);
 
   const formatCurrency = (amount: number) => 
-    new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(amount);
+    new Intl.NumberFormat('en-MW', { style: 'currency', currency: 'MWK' }).format(amount);
 
   const formatDate = (date: string) => 
-    new Date(date).toLocaleDateString('en-KE', { 
+    new Date(date).toLocaleDateString('en-MW', { 
       day: 'numeric', 
       month: 'short', 
       year: 'numeric' 

@@ -44,15 +44,15 @@ export default function AdminDashboard() {
   const pendingApps = loanApplications.filter(a => a.status === 'pending');
 
   const formatCurrency = (amount: number) => 
-    new Intl.NumberFormat('en-KE', { 
+    new Intl.NumberFormat('en-MW', { 
       style: 'currency', 
-      currency: 'KES',
+      currency: 'MWK',
       notation: 'compact',
       maximumFractionDigits: 1
     }).format(amount);
 
   const formatFullCurrency = (amount: number) => 
-    new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(amount);
+    new Intl.NumberFormat('en-MW', { style: 'currency', currency: 'MWK' }).format(amount);
 
   return (
     <DashboardLayout requiredRole="admin">
