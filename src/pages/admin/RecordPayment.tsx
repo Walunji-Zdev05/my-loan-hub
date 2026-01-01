@@ -32,7 +32,7 @@ export default function RecordPayment() {
   const selectedLoan = loans.find(l => l.id === selectedLoanId);
 
   const formatCurrency = (amount: number) => 
-    new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(amount);
+    new Intl.NumberFormat('en-MW', { style: 'currency', currency: 'MWK' }).format(amount);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,7 +128,7 @@ export default function RecordPayment() {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="amount">Payment Amount (KES)</Label>
+                  <Label htmlFor="amount">Payment Amount (MWK)</Label>
                   <Input
                     id="amount"
                     type="number"

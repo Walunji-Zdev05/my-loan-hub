@@ -96,9 +96,9 @@ const RepaymentCalculator = () => {
   const savings = calculations.flat.totalInterest - calculations.reducing.totalInterest;
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("en-MW", {
       style: "currency",
-      currency: "USD",
+      currency: "MWK",
       minimumFractionDigits: 2,
     }).format(value);
   };
