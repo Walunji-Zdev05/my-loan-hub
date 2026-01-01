@@ -71,6 +71,9 @@ export interface ScheduleItem {
   principal: number;
   interest: number;
   total: number;
+  lateFee: number;
+  daysLate: number;
+  totalWithFee: number;
   status: 'paid' | 'pending' | 'overdue';
   paidDate?: string;
 }
@@ -124,6 +127,24 @@ export const loanProducts: LoanProduct[] = [
   { id: 'PR005', name: 'Agricultural Loan', minAmount: 25000, maxAmount: 1000000, interestRate: 9, maxTerm: 12, termUnit: 'months', description: 'For farming inputs, equipment, and seasonal needs', isActive: false },
 ];
 
+// Late fee configuration
+const LATE_FEE_RATE = 0.02; // 2% of payment amount per day late
+const MAX_LATE_FEE_DAYS = 30; // Cap late fees at 30 days
+
+// Calculate late fee
+export const calculateLateFee = (paymentAmount: number, dueDate: Date, currentDate: Date = new Date()): { lateFee: number; daysLate: number } => {
+  if (currentDate <= dueDate) {
+    return { lateFee: 0, daysLate: 0 };
+  }
+  
+  const timeDiff = currentDate.getTime() - dueDate.getTime();
+  const daysLate = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+  const cappedDays = Math.min(daysLate, MAX_LATE_FEE_DAYS);
+  const lateFee = Math.round(paymentAmount * LATE_FEE_RATE * cappedDays);
+  
+  return { lateFee, daysLate };
+};
+
 // Generate repayment schedule for a loan
 export const generateSchedule = (loanId: string): ScheduleItem[] => {
   const loan = loans.find(l => l.id === loanId);
@@ -135,6 +156,7 @@ export const generateSchedule = (loanId: string): ScheduleItem[] => {
   const interest = monthlyPayment - principal;
   
   const startDate = new Date(loan.disbursedDate);
+  const today = new Date();
   
   for (let i = 1; i <= loan.term; i++) {
     const dueDate = new Date(startDate);
@@ -145,7 +167,12 @@ export const generateSchedule = (loanId: string): ScheduleItem[] => {
     }
 
     const isPaid = i <= (loan.term - Math.ceil(loan.outstandingBalance / monthlyPayment));
-    const isOverdue = !isPaid && dueDate < new Date();
+    const isOverdue = !isPaid && dueDate < today;
+    
+    // Calculate late fee for overdue payments
+    const { lateFee, daysLate } = isOverdue 
+      ? calculateLateFee(Math.round(monthlyPayment), dueDate, today)
+      : { lateFee: 0, daysLate: 0 };
 
     schedule.push({
       id: `${loanId}-S${i.toString().padStart(3, '0')}`,
@@ -153,6 +180,9 @@ export const generateSchedule = (loanId: string): ScheduleItem[] => {
       principal: Math.round(principal),
       interest: Math.round(interest),
       total: Math.round(monthlyPayment),
+      lateFee,
+      daysLate,
+      totalWithFee: Math.round(monthlyPayment) + lateFee,
       status: isPaid ? 'paid' : isOverdue ? 'overdue' : 'pending',
       paidDate: isPaid ? dueDate.toISOString().split('T')[0] : undefined,
     });
