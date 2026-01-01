@@ -31,6 +31,7 @@ import {
   getMonthlyDisbursements, 
   getCollectionTrend,
   getLoanPortfolio,
+  getLoanStatusDistribution,
   loanApplications 
 } from '@/lib/mockData';
 
@@ -39,6 +40,7 @@ export default function AdminDashboard() {
   const disbursements = getMonthlyDisbursements();
   const collections = getCollectionTrend();
   const portfolio = getLoanPortfolio();
+  const loanStatuses = getLoanStatusDistribution();
   const pendingApps = loanApplications.filter(a => a.status === 'pending');
 
   const formatCurrency = (amount: number) => 
@@ -180,7 +182,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Bottom Row */}
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-4">
           {/* Portfolio Distribution */}
           <div className="rounded-xl border border-border bg-card p-6 animate-slide-up" style={{ animationDelay: '0.2s' }}>
             <h2 className="text-lg font-semibold mb-4">Loan Portfolio</h2>
@@ -222,6 +224,52 @@ export default function AdminDashboard() {
                     <span className="text-muted-foreground">{item.name}</span>
                   </div>
                   <span className="font-medium">{formatCurrency(item.value)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Loan Status Distribution */}
+          <div className="rounded-xl border border-border bg-card p-6 animate-slide-up" style={{ animationDelay: '0.25s' }}>
+            <h2 className="text-lg font-semibold mb-4">Loan Status</h2>
+            <div className="h-[200px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={loanStatuses}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={80}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {loanStatuses.map((entry, index) => (
+                      <Cell key={`status-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    formatter={(value: number) => [`${value} loans`, 'Count']}
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(0, 0%, 100%)',
+                      border: '1px solid hsl(215, 20%, 88%)',
+                      borderRadius: '8px'
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="mt-4 space-y-2">
+              {loanStatuses.map((item, index) => (
+                <div key={index} className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="h-3 w-3 rounded-full" 
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <span className="text-muted-foreground">{item.name}</span>
+                  </div>
+                  <span className="font-medium">{item.value}</span>
                 </div>
               ))}
             </div>
