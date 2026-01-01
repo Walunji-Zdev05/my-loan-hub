@@ -64,9 +64,32 @@ export default function RepaymentSchedule() {
     },
     {
       key: 'total',
-      header: 'Total',
+      header: 'Installment',
       cell: (item: ScheduleItem) => (
         <span className="font-medium">{formatCurrency(item.total)}</span>
+      ),
+    },
+    {
+      key: 'lateFee',
+      header: 'Late Fee',
+      cell: (item: ScheduleItem) => (
+        item.lateFee > 0 ? (
+          <div className="text-destructive">
+            <span className="font-medium">{formatCurrency(item.lateFee)}</span>
+            <span className="text-xs ml-1">({item.daysLate}d)</span>
+          </div>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        )
+      ),
+    },
+    {
+      key: 'totalWithFee',
+      header: 'Total Due',
+      cell: (item: ScheduleItem) => (
+        <span className={`font-semibold ${item.lateFee > 0 ? 'text-destructive' : ''}`}>
+          {formatCurrency(item.totalWithFee)}
+        </span>
       ),
     },
     {
@@ -74,18 +97,12 @@ export default function RepaymentSchedule() {
       header: 'Status',
       cell: (item: ScheduleItem) => <StatusBadge status={item.status} />,
     },
-    {
-      key: 'paidDate',
-      header: 'Paid Date',
-      cell: (item: ScheduleItem) => (
-        item.paidDate ? formatDate(item.paidDate) : '—'
-      ),
-    },
   ];
 
   const paidItems = schedule.filter(s => s.status === 'paid');
   const pendingItems = schedule.filter(s => s.status === 'pending');
   const overdueItems = schedule.filter(s => s.status === 'overdue');
+  const totalLateFees = overdueItems.reduce((sum, item) => sum + item.lateFee, 0);
 
   return (
     <DashboardLayout requiredRole="borrower">
@@ -144,6 +161,19 @@ export default function RepaymentSchedule() {
                   <p className="text-lg font-semibold">{overdueItems.length} payments</p>
                 </div>
               </div>
+              {totalLateFees > 0 && (
+                <div className="sm:col-span-3 flex items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+                  <AlertCircle className="h-5 w-5 text-destructive" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-destructive">
+                      Total Late Fees Accrued: {formatCurrency(totalLateFees)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Late fee: 2% per day (max 30 days). Pay overdue installments to stop accruing fees.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Schedule Table */}
