@@ -9,7 +9,8 @@ import {
   CreditCard, 
   Package,
   LogOut,
-  Wallet
+  Wallet,
+  Calculator
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -25,6 +26,7 @@ const borrowerNav: NavItem[] = [
   { label: 'My Loans', href: '/borrower/loans', icon: FileText },
   { label: 'Repayment Schedule', href: '/borrower/schedule', icon: Calendar },
   { label: 'Apply for Loan', href: '/borrower/apply', icon: PlusCircle },
+  { label: 'Calculator', href: '/borrower/calculator', icon: Calculator },
 ];
 
 const adminNav: NavItem[] = [
