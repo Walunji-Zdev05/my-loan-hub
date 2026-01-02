@@ -34,6 +34,7 @@ export default function LoanProducts() {
     minAmount: '',
     maxAmount: '',
     interestRate: '',
+    interestType: 'flat' as 'flat' | 'reducing',
     maxTerm: '',
     termUnit: 'months' as 'months' | 'weeks',
     isActive: true,
@@ -51,6 +52,7 @@ export default function LoanProducts() {
         minAmount: product.minAmount.toString(),
         maxAmount: product.maxAmount.toString(),
         interestRate: product.interestRate.toString(),
+        interestType: (product as any).interestType || 'flat',
         maxTerm: product.maxTerm.toString(),
         termUnit: product.termUnit,
         isActive: product.isActive,
@@ -63,6 +65,7 @@ export default function LoanProducts() {
         minAmount: '',
         maxAmount: '',
         interestRate: '',
+        interestType: 'flat',
         maxTerm: '',
         termUnit: 'months',
         isActive: true,
@@ -238,7 +241,7 @@ export default function LoanProducts() {
                 </div>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="interestRate">Interest Rate (%)</Label>
                   <Input
@@ -250,6 +253,24 @@ export default function LoanProducts() {
                     required
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="interestType">Interest Type</Label>
+                  <Select 
+                    value={formData.interestType} 
+                    onValueChange={(value: 'flat' | 'reducing') => setFormData({ ...formData, interestType: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="flat">Flat Rate</SelectItem>
+                      <SelectItem value="reducing">Reducing Balance</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="maxTerm">Max Term</Label>
                   <Input
