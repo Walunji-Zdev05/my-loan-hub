@@ -169,6 +169,12 @@ export default function LoanProducts() {
                   <span className="font-medium text-accent">{product.interestRate}% p.a.</span>
                 </div>
                 <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Interest Type</span>
+                  <span className="font-medium">
+                    {(product as any).interestType === 'reducing' ? 'Reducing Balance' : 'Flat Rate'}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Max Term</span>
                   <span className="font-medium">{product.maxTerm} {product.termUnit}</span>
                 </div>
