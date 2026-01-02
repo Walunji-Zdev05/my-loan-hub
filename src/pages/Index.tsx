@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import LandingPage from './LandingPage';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -9,10 +10,13 @@ const Index = () => {
   useEffect(() => {
     if (isAuthenticated && user) {
       navigate(`/${user.role}`);
-    } else {
-      navigate('/login');
     }
   }, [isAuthenticated, user, navigate]);
+
+  // Show landing page for non-authenticated users
+  if (!isAuthenticated) {
+    return <LandingPage />;
+  }
 
   return null;
 };
