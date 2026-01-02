@@ -14,7 +14,6 @@ import BorrowerDashboard from "./pages/borrower/BorrowerDashboard";
 import BorrowerLoans from "./pages/borrower/BorrowerLoans";
 import RepaymentSchedule from "./pages/borrower/RepaymentSchedule";
 import ApplyLoan from "./pages/borrower/ApplyLoan";
-import RepaymentCalculator from "./pages/borrower/RepaymentCalculator";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -41,7 +40,6 @@ const App = () => (
             <Route path="/borrower/loans" element={<BorrowerLoans />} />
             <Route path="/borrower/schedule" element={<RepaymentSchedule />} />
             <Route path="/borrower/apply" element={<ApplyLoan />} />
-            <Route path="/borrower/calculator" element={<RepaymentCalculator />} />
             
             {/* Admin Routes */}
             <Route path="/admin" element={<AdminDashboard />} />
