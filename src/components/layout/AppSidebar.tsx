@@ -9,7 +9,8 @@ import {
   CreditCard, 
   Package,
   LogOut,
-  Wallet
+  Wallet,
+  BookOpen
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -33,6 +34,7 @@ const adminNav: NavItem[] = [
   { label: 'Applications', href: '/admin/applications', icon: ClipboardList },
   { label: 'Record Payment', href: '/admin/payments', icon: CreditCard },
   { label: 'Loan Products', href: '/admin/products', icon: Package },
+  { label: 'Ledger', href: '/admin/ledger', icon: BookOpen },
 ];
 
 export function AppSidebar() {
