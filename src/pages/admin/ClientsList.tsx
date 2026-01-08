@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, User, Phone, Mail } from 'lucide-react';
+import { Search, User, Phone, Mail, Check, AlertCircle } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { DataTable } from '@/components/shared/DataTable';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { clients, loans, Client } from '@/lib/mockData';
+import { clients, loans, loanApplications, Client } from '@/lib/mockData';
+import { cn } from '@/lib/utils';
 
 export default function ClientsList() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -34,6 +35,29 @@ export default function ClientsList() {
 
   const getClientLoans = (clientId: string) => 
     loans.filter(l => l.clientId === clientId);
+
+  const getClientApplications = (clientId: string) =>
+    loanApplications.filter(a => a.clientId === clientId);
+
+  const FeeStatusBadge = ({ paid, label, amount, paidDate }: { paid: boolean; label: string; amount: number; paidDate?: string }) => (
+    <div className={cn(
+      'flex items-center justify-between p-2 rounded-lg text-sm',
+      paid ? 'bg-success/10' : 'bg-muted'
+    )}>
+      <div className="flex items-center gap-2">
+        {paid ? (
+          <Check className="h-4 w-4 text-success" />
+        ) : (
+          <AlertCircle className="h-4 w-4 text-muted-foreground" />
+        )}
+        <span className={paid ? 'text-success' : 'text-muted-foreground'}>{label}</span>
+      </div>
+      <div className="text-right">
+        <p className="font-medium">{formatCurrency(amount)}</p>
+        {paidDate && <p className="text-xs text-muted-foreground">Paid: {formatDate(paidDate)}</p>}
+      </div>
+    </div>
+  );
 
   const columns = [
     {
@@ -124,7 +148,7 @@ export default function ClientsList() {
 
         {/* Client Details Modal */}
         <Dialog open={!!selectedClient} onOpenChange={() => setSelectedClient(null)}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Client Details</DialogTitle>
             </DialogHeader>
@@ -159,33 +183,79 @@ export default function ClientsList() {
                   </div>
                 </div>
 
+                {/* Fee Status from Applications */}
+                {getClientApplications(selectedClient.id).length > 0 && (
+                  <div>
+                    <h4 className="font-medium mb-3">Application Fee Status</h4>
+                    <div className="space-y-3">
+                      {getClientApplications(selectedClient.id).map(app => (
+                        <div key={app.id} className="border border-border rounded-lg p-3 space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium">{app.id} - {app.product}</span>
+                            <span className={cn(
+                              'text-xs px-2 py-0.5 rounded-full',
+                              app.status === 'pending' && 'bg-warning/10 text-warning',
+                              app.status === 'approved' && 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+                              app.status === 'rejected' && 'bg-destructive/10 text-destructive',
+                              app.status === 'disbursed' && 'bg-success/10 text-success'
+                            )}>
+                              {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                            </span>
+                          </div>
+                          <div className="text-sm text-muted-foreground mb-2">
+                            Amount: {formatCurrency(app.amount)} · Applied: {formatDate(app.appliedDate)}
+                          </div>
+                          <div className="grid gap-2">
+                            <FeeStatusBadge 
+                              paid={app.applicationFeePaid} 
+                              label="Application Fee" 
+                              amount={app.applicationFeeAmount}
+                              paidDate={app.applicationFeePaidDate}
+                            />
+                            <FeeStatusBadge 
+                              paid={app.approvalFeePaid} 
+                              label="Approval Fee" 
+                              amount={app.approvalFeeAmount}
+                              paidDate={app.approvalFeePaidDate}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Loans Summary */}
                 <div>
                   <h4 className="font-medium mb-3">Loan History</h4>
                   <div className="space-y-2">
-                    {getClientLoans(selectedClient.id).map(loan => (
-                      <div 
-                        key={loan.id}
-                        className="flex items-center justify-between rounded-lg border border-border p-3"
-                      >
-                        <div>
-                          <p className="font-medium">{loan.product}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {loan.id} · {formatDate(loan.disbursedDate)}
-                          </p>
+                    {getClientLoans(selectedClient.id).length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No loan history</p>
+                    ) : (
+                      getClientLoans(selectedClient.id).map(loan => (
+                        <div 
+                          key={loan.id}
+                          className="flex items-center justify-between rounded-lg border border-border p-3"
+                        >
+                          <div>
+                            <p className="font-medium">{loan.product}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {loan.id} · {formatDate(loan.disbursedDate)}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-medium">{formatCurrency(loan.amount)}</p>
+                            <p className={`text-sm ${
+                              loan.status === 'paid' ? 'text-success' : 
+                              loan.status === 'overdue' ? 'text-destructive' : 
+                              'text-warning'
+                            }`}>
+                              {loan.status.charAt(0).toUpperCase() + loan.status.slice(1)}
+                            </p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-medium">{formatCurrency(loan.amount)}</p>
-                          <p className={`text-sm ${
-                            loan.status === 'paid' ? 'text-success' : 
-                            loan.status === 'overdue' ? 'text-destructive' : 
-                            'text-warning'
-                          }`}>
-                            {loan.status.charAt(0).toUpperCase() + loan.status.slice(1)}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
