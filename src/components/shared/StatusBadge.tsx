@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 
-type StatusType = 'paid' | 'pending' | 'overdue' | 'active' | 'approved' | 'rejected' | 'completed' | 'failed';
+type StatusType = 'paid' | 'pending' | 'overdue' | 'active' | 'approved' | 'rejected' | 'completed' | 'failed' | 'disbursed';
 
 interface StatusBadgeProps {
   status: StatusType;
@@ -16,6 +16,7 @@ const statusStyles: Record<StatusType, string> = {
   overdue: 'status-overdue',
   rejected: 'status-rejected',
   failed: 'status-rejected',
+  disbursed: 'status-paid',
 };
 
 const statusLabels: Record<StatusType, string> = {
@@ -27,6 +28,7 @@ const statusLabels: Record<StatusType, string> = {
   overdue: 'Overdue',
   rejected: 'Rejected',
   failed: 'Failed',
+  disbursed: 'Disbursed',
 };
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {

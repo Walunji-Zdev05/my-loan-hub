@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Edit2, Trash2, Package } from 'lucide-react';
+import { Plus, Edit2, Package } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +38,8 @@ export default function LoanProducts() {
     maxTerm: '',
     termUnit: 'months' as 'months' | 'weeks',
     isActive: true,
+    applicationFeeAmount: '',
+    approvalFeeAmount: '',
   });
 
   const formatCurrency = (amount: number) => 
@@ -52,10 +54,12 @@ export default function LoanProducts() {
         minAmount: product.minAmount.toString(),
         maxAmount: product.maxAmount.toString(),
         interestRate: product.interestRate.toString(),
-        interestType: (product as any).interestType || 'flat',
+        interestType: product.interestType || 'flat',
         maxTerm: product.maxTerm.toString(),
         termUnit: product.termUnit,
         isActive: product.isActive,
+        applicationFeeAmount: product.applicationFeeAmount.toString(),
+        approvalFeeAmount: product.approvalFeeAmount.toString(),
       });
     } else {
       setEditingProduct(null);
@@ -69,6 +73,8 @@ export default function LoanProducts() {
         maxTerm: '',
         termUnit: 'months',
         isActive: true,
+        applicationFeeAmount: '',
+        approvalFeeAmount: '',
       });
     }
     setIsModalOpen(true);
@@ -84,9 +90,12 @@ export default function LoanProducts() {
       minAmount: parseFloat(formData.minAmount),
       maxAmount: parseFloat(formData.maxAmount),
       interestRate: parseFloat(formData.interestRate),
+      interestType: formData.interestType,
       maxTerm: parseInt(formData.maxTerm),
       termUnit: formData.termUnit,
       isActive: formData.isActive,
+      applicationFeeAmount: parseFloat(formData.applicationFeeAmount) || 0,
+      approvalFeeAmount: parseFloat(formData.approvalFeeAmount) || 0,
     };
 
     if (editingProduct) {
@@ -171,12 +180,20 @@ export default function LoanProducts() {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Interest Type</span>
                   <span className="font-medium">
-                    {(product as any).interestType === 'reducing' ? 'Reducing Balance' : 'Flat Rate'}
+                    {product.interestType === 'reducing' ? 'Reducing Balance' : 'Flat Rate'}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Max Term</span>
                   <span className="font-medium">{product.maxTerm} {product.termUnit}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Application Fee</span>
+                  <span className="font-medium">{formatCurrency(product.applicationFeeAmount)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Approval Fee</span>
+                  <span className="font-medium">{formatCurrency(product.approvalFeeAmount)}</span>
                 </div>
               </div>
 
@@ -195,7 +212,7 @@ export default function LoanProducts() {
 
         {/* Add/Edit Modal */}
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingProduct ? 'Edit Product' : 'Add New Product'}
@@ -301,6 +318,29 @@ export default function LoanProducts() {
                       <SelectItem value="weeks">Weeks</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="applicationFeeAmount">Application Fee (MWK)</Label>
+                  <Input
+                    id="applicationFeeAmount"
+                    type="number"
+                    value={formData.applicationFeeAmount}
+                    onChange={(e) => setFormData({ ...formData, applicationFeeAmount: e.target.value })}
+                    placeholder="0"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="approvalFeeAmount">Approval Fee (MWK)</Label>
+                  <Input
+                    id="approvalFeeAmount"
+                    type="number"
+                    value={formData.approvalFeeAmount}
+                    onChange={(e) => setFormData({ ...formData, approvalFeeAmount: e.target.value })}
+                    placeholder="0"
+                  />
                 </div>
               </div>
 

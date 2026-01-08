@@ -49,8 +49,14 @@ export interface LoanApplication {
   termUnit: 'months' | 'weeks';
   product: string;
   purpose: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'disbursed';
   appliedDate: string;
+  applicationFeePaid: boolean;
+  applicationFeeAmount: number;
+  applicationFeePaidDate?: string;
+  approvalFeePaid: boolean;
+  approvalFeeAmount: number;
+  approvalFeePaidDate?: string;
 }
 
 export interface LoanProduct {
@@ -59,10 +65,13 @@ export interface LoanProduct {
   minAmount: number;
   maxAmount: number;
   interestRate: number;
+  interestType: 'flat' | 'reducing';
   maxTerm: number;
   termUnit: 'months' | 'weeks';
   description: string;
   isActive: boolean;
+  applicationFeeAmount: number;
+  approvalFeeAmount: number;
 }
 
 export interface ScheduleItem {
@@ -113,18 +122,18 @@ export const payments: Payment[] = [
 
 // Mock Loan Applications
 export const loanApplications: LoanApplication[] = [
-  { id: 'A001', clientId: 'C001', clientName: 'John Mwangi', nationalId: '12345678', amount: 80000, term: 18, termUnit: 'months', product: 'Business Loan', purpose: 'Expand retail shop inventory', status: 'pending', appliedDate: '2024-12-28' },
-  { id: 'A002', clientId: 'C003', clientName: 'Peter Ochieng', nationalId: '34567890', amount: 50000, term: 12, termUnit: 'months', product: 'Personal Loan', purpose: 'Home renovation', status: 'pending', appliedDate: '2024-12-27' },
-  { id: 'A003', clientId: 'C006', clientName: 'Sarah Njeri', nationalId: '67890123', amount: 200000, term: 24, termUnit: 'months', product: 'Asset Finance', purpose: 'Purchase delivery motorcycle', status: 'pending', appliedDate: '2024-12-26' },
+  { id: 'A001', clientId: 'C001', clientName: 'John Mwangi', nationalId: '12345678', amount: 80000, term: 18, termUnit: 'months', product: 'Business Loan', purpose: 'Expand retail shop inventory', status: 'pending', appliedDate: '2024-12-28', applicationFeePaid: false, applicationFeeAmount: 5000, approvalFeePaid: false, approvalFeeAmount: 15000 },
+  { id: 'A002', clientId: 'C003', clientName: 'Peter Ochieng', nationalId: '34567890', amount: 50000, term: 12, termUnit: 'months', product: 'Personal Loan', purpose: 'Home renovation', status: 'pending', appliedDate: '2024-12-27', applicationFeePaid: true, applicationFeeAmount: 2500, applicationFeePaidDate: '2024-12-27', approvalFeePaid: false, approvalFeeAmount: 7500 },
+  { id: 'A003', clientId: 'C006', clientName: 'Sarah Njeri', nationalId: '67890123', amount: 200000, term: 24, termUnit: 'months', product: 'Asset Finance', purpose: 'Purchase delivery motorcycle', status: 'approved', appliedDate: '2024-12-26', applicationFeePaid: true, applicationFeeAmount: 10000, applicationFeePaidDate: '2024-12-26', approvalFeePaid: false, approvalFeeAmount: 25000 },
 ];
 
 // Mock Loan Products
 export const loanProducts: LoanProduct[] = [
-  { id: 'PR001', name: 'Personal Loan', minAmount: 10000, maxAmount: 500000, interestRate: 12, maxTerm: 24, termUnit: 'months', description: 'For personal use including education, medical, and home improvements', isActive: true },
-  { id: 'PR002', name: 'Business Loan', minAmount: 50000, maxAmount: 2000000, interestRate: 10, maxTerm: 36, termUnit: 'months', description: 'For business expansion, inventory, and working capital', isActive: true },
-  { id: 'PR003', name: 'Emergency Loan', minAmount: 5000, maxAmount: 100000, interestRate: 15, maxTerm: 12, termUnit: 'weeks', description: 'Quick access loans for urgent needs', isActive: true },
-  { id: 'PR004', name: 'Asset Finance', minAmount: 100000, maxAmount: 5000000, interestRate: 8, maxTerm: 48, termUnit: 'months', description: 'For purchasing vehicles, machinery, and equipment', isActive: true },
-  { id: 'PR005', name: 'Agricultural Loan', minAmount: 25000, maxAmount: 1000000, interestRate: 9, maxTerm: 12, termUnit: 'months', description: 'For farming inputs, equipment, and seasonal needs', isActive: false },
+  { id: 'PR001', name: 'Personal Loan', minAmount: 10000, maxAmount: 500000, interestRate: 12, interestType: 'flat', maxTerm: 24, termUnit: 'months', description: 'For personal use including education, medical, and home improvements', isActive: true, applicationFeeAmount: 2500, approvalFeeAmount: 7500 },
+  { id: 'PR002', name: 'Business Loan', minAmount: 50000, maxAmount: 2000000, interestRate: 10, interestType: 'reducing', maxTerm: 36, termUnit: 'months', description: 'For business expansion, inventory, and working capital', isActive: true, applicationFeeAmount: 5000, approvalFeeAmount: 15000 },
+  { id: 'PR003', name: 'Emergency Loan', minAmount: 5000, maxAmount: 100000, interestRate: 15, interestType: 'flat', maxTerm: 12, termUnit: 'weeks', description: 'Quick access loans for urgent needs', isActive: true, applicationFeeAmount: 1000, approvalFeeAmount: 3000 },
+  { id: 'PR004', name: 'Asset Finance', minAmount: 100000, maxAmount: 5000000, interestRate: 8, interestType: 'reducing', maxTerm: 48, termUnit: 'months', description: 'For purchasing vehicles, machinery, and equipment', isActive: true, applicationFeeAmount: 10000, approvalFeeAmount: 25000 },
+  { id: 'PR005', name: 'Agricultural Loan', minAmount: 25000, maxAmount: 1000000, interestRate: 9, interestType: 'flat', maxTerm: 12, termUnit: 'months', description: 'For farming inputs, equipment, and seasonal needs', isActive: false, applicationFeeAmount: 3000, approvalFeeAmount: 10000 },
 ];
 
 // Late fee configuration
