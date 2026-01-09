@@ -18,6 +18,10 @@ import ApplyLoan from "./pages/borrower/ApplyLoan";
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ClientsList from "./pages/admin/ClientsList";
+import CreateClient from "./pages/admin/CreateClient";
+import ClientApproval from "./pages/admin/ClientApproval";
+import ClientDisbursement from "./pages/admin/ClientDisbursement";
+import ClientProfile from "./pages/admin/ClientProfile";
 import LoanApplications from "./pages/admin/LoanApplications";
 import RecordPayment from "./pages/admin/RecordPayment";
 import LoanProducts from "./pages/admin/LoanProducts";
@@ -45,6 +49,10 @@ const App = () => (
             {/* Admin Routes */}
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/clients" element={<ClientsList />} />
+            <Route path="/admin/clients/new" element={<CreateClient />} />
+            <Route path="/admin/clients/:clientId" element={<ClientProfile />} />
+            <Route path="/admin/approval" element={<ClientApproval />} />
+            <Route path="/admin/disbursement" element={<ClientDisbursement />} />
             <Route path="/admin/applications" element={<LoanApplications />} />
             <Route path="/admin/payments" element={<RecordPayment />} />
             <Route path="/admin/products" element={<LoanProducts />} />
