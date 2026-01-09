@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Search, User, Phone, Mail, Check, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, User, Phone, Mail, Check, AlertCircle, Plus, Eye } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { DataTable } from '@/components/shared/DataTable';
 import { Input } from '@/components/ui/input';
@@ -14,6 +15,7 @@ import { clients, loans, loanApplications, Client } from '@/lib/mockData';
 import { cn } from '@/lib/utils';
 
 export default function ClientsList() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
@@ -107,13 +109,23 @@ export default function ClientsList() {
       key: 'actions',
       header: '',
       cell: (client: Client) => (
-        <Button 
-          variant="ghost" 
-          size="sm"
-          onClick={() => setSelectedClient(client)}
-        >
-          View Details
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => setSelectedClient(client)}
+          >
+            Quick View
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => navigate(`/admin/clients/${client.id}`)}
+          >
+            <Eye className="h-4 w-4 mr-1" />
+            Full Profile
+          </Button>
+        </div>
       ),
     },
   ];
@@ -128,15 +140,21 @@ export default function ClientsList() {
           </p>
         </div>
 
-        {/* Search */}
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search by name, ID, or national ID..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
+        {/* Actions Bar */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="relative max-w-md flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search by name, ID, or national ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Button onClick={() => navigate('/admin/clients/new')}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create Client
+          </Button>
         </div>
 
         {/* Clients Table */}

@@ -10,7 +10,9 @@ import {
   Package,
   LogOut,
   Wallet,
-  BookOpen
+  BookOpen,
+  UserCheck,
+  Send
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -31,6 +33,8 @@ const borrowerNav: NavItem[] = [
 const adminNav: NavItem[] = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { label: 'Clients', href: '/admin/clients', icon: Users },
+  { label: 'Client Approval', href: '/admin/approval', icon: UserCheck },
+  { label: 'Disbursement', href: '/admin/disbursement', icon: Send },
   { label: 'Applications', href: '/admin/applications', icon: ClipboardList },
   { label: 'Record Payment', href: '/admin/payments', icon: CreditCard },
   { label: 'Loan Products', href: '/admin/products', icon: Package },
