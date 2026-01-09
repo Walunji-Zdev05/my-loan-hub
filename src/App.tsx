@@ -26,6 +26,7 @@ import LoanApplications from "./pages/admin/LoanApplications";
 import RecordPayment from "./pages/admin/RecordPayment";
 import LoanProducts from "./pages/admin/LoanProducts";
 import Ledger from "./pages/admin/Ledger";
+import LoanBook from "./pages/admin/LoanBook";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +58,7 @@ const App = () => (
             <Route path="/admin/payments" element={<RecordPayment />} />
             <Route path="/admin/products" element={<LoanProducts />} />
             <Route path="/admin/ledger" element={<Ledger />} />
+            <Route path="/admin/loan-book" element={<LoanBook />} />
             
             <Route path="*" element={<NotFound />} />
           </Routes>

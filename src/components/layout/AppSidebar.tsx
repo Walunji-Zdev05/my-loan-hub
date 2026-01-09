@@ -12,7 +12,8 @@ import {
   Wallet,
   BookOpen,
   UserCheck,
-  Send
+  Send,
+  BookOpenCheck
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -38,6 +39,7 @@ const adminNav: NavItem[] = [
   { label: 'Applications', href: '/admin/applications', icon: ClipboardList },
   { label: 'Record Payment', href: '/admin/payments', icon: CreditCard },
   { label: 'Loan Products', href: '/admin/products', icon: Package },
+  { label: 'Loan Book', href: '/admin/loan-book', icon: BookOpenCheck },
   { label: 'Ledger', href: '/admin/ledger', icon: BookOpen },
 ];
 
