@@ -28,6 +28,7 @@ import LoanProducts from "./pages/admin/LoanProducts";
 import Ledger from "./pages/admin/Ledger";
 import LoanBook from "./pages/admin/LoanBook";
 import PortfolioAtRisk from "./pages/admin/PortfolioAtRisk";
+import ExpectedLoans from "./pages/admin/ExpectedLoans";
 
 const queryClient = new QueryClient();
 
@@ -61,6 +62,7 @@ const App = () => (
             <Route path="/admin/ledger" element={<Ledger />} />
             <Route path="/admin/loan-book" element={<LoanBook />} />
             <Route path="/admin/par" element={<PortfolioAtRisk />} />
+            <Route path="/admin/expected" element={<ExpectedLoans />} />
             
             <Route path="*" element={<NotFound />} />
           </Routes>
