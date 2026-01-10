@@ -14,7 +14,8 @@ import {
   UserCheck,
   Send,
   BookOpenCheck,
-  AlertTriangle
+  AlertTriangle,
+  Clock
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -34,6 +35,7 @@ const borrowerNav: NavItem[] = [
 
 const adminNav: NavItem[] = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+  { label: 'Expected Loans', href: '/admin/expected', icon: Clock },
   { label: 'Clients', href: '/admin/clients', icon: Users },
   { label: 'Client Approval', href: '/admin/approval', icon: UserCheck },
   { label: 'Disbursement', href: '/admin/disbursement', icon: Send },
