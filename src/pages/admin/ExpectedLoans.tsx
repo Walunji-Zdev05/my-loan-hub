@@ -6,6 +6,7 @@ import { DataTable } from '@/components/shared/DataTable';
 import { StatCard } from '@/components/shared/StatCard';
 import { Calendar, DollarSign, TrendingUp, Clock, FileDown } from 'lucide-react';
 import { format, addDays, isWithinInterval, startOfToday } from 'date-fns';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 
 // Fake future data for demo
 const generateFakeData = () => {
@@ -57,7 +58,7 @@ const { pendingDisbursements, expectedRepayments, projectedIncome } = generateFa
 
 type DateFilter = '7' | '30' | '60' | 'all';
 
-export default function ExpectedLoans() {
+function ExpectedLoans() {
   const [dateFilter, setDateFilter] = useState<DateFilter>('30');
   const today = startOfToday();
 
@@ -254,3 +255,5 @@ export default function ExpectedLoans() {
     </div>
   );
 }
+
+export default ExpectedLoans;
