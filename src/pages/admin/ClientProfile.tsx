@@ -12,7 +12,7 @@ import {
   AlertTriangle,
   Clock
 } from 'lucide-react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
+
 import { DataTable } from '@/components/shared/DataTable';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -260,176 +260,172 @@ export default function ClientProfile() {
 
   if (!client) {
     return (
-      <DashboardLayout requiredRole="admin">
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">Client not found</p>
-          <Button className="mt-4" onClick={() => navigate('/admin/clients')}>
-            Back to Clients
-          </Button>
-        </div>
-      </DashboardLayout>
+      <div className="text-center py-12">
+        <p className="text-muted-foreground">Client not found</p>
+        <Button className="mt-4" onClick={() => navigate('/admin/clients')}>
+          Back to Clients
+        </Button>
+      </div>
     );
   }
 
   return (
-    <DashboardLayout requiredRole="admin">
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/admin/clients')}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold">Client Profile</h1>
-            <p className="mt-1 text-muted-foreground">
-              View detailed client information and performance metrics
-            </p>
-          </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="icon" onClick={() => navigate('/admin/clients')}>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div className="flex-1">
+          <h1 className="text-2xl font-bold">Client Profile</h1>
+          <p className="mt-1 text-muted-foreground">
+            View detailed client information and performance metrics
+          </p>
         </div>
+      </div>
 
-        {/* Client Info Card */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-6">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground text-2xl font-semibold">
-                {client.name.charAt(0)}
+      {/* Client Info Card */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-start gap-6">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground text-2xl font-semibold">
+              {client.name.charAt(0)}
+            </div>
+            <div className="flex-1 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="flex items-center gap-3">
+                <User className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Name</p>
+                  <p className="font-medium">{client.name}</p>
+                </div>
               </div>
-              <div className="flex-1 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="flex items-center gap-3">
-                  <User className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Name</p>
-                    <p className="font-medium">{client.name}</p>
-                  </div>
+              <div className="flex items-center gap-3">
+                <Mail className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Email</p>
+                  <p className="font-medium">{client.email}</p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Mail className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Email</p>
-                    <p className="font-medium">{client.email}</p>
-                  </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Phone className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Phone</p>
+                  <p className="font-medium">{client.phone}</p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Phone className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Phone</p>
-                    <p className="font-medium">{client.phone}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Calendar className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Member Since</p>
-                    <p className="font-medium">{formatDate(client.joinDate)}</p>
-                  </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Calendar className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Member Since</p>
+                  <p className="font-medium">{formatDate(client.joinDate)}</p>
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Performance Summary */}
-        <div>
-          <h2 className="text-lg font-semibold mb-4">Performance Summary</h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4" />
-                  Repayment Rate
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className={`text-3xl font-bold ${
-                  metrics.repaymentRate >= 80 ? 'text-success' :
-                  metrics.repaymentRate >= 60 ? 'text-warning' : 'text-destructive'
-                }`}>
-                  {metrics.repaymentRate}%
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {metrics.onTimePayments} of {metrics.totalPayments} on-time
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4" />
-                  Total Paid
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold text-success">{formatCurrency(metrics.totalPaid)}</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  All payments combined
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4" />
-                  Defaults
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className={`text-2xl font-bold ${metrics.defaultCount > 0 ? 'text-destructive' : 'text-success'}`}>
-                  {metrics.defaultCount}
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  90+ days overdue
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Outstanding Balance
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold">{formatCurrency(metrics.outstandingBalance)}</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {metrics.activeLoans} active loans
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Loan Completion
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold text-success">{metrics.completedLoans}</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Loans fully repaid
-                </p>
-              </CardContent>
-            </Card>
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* Payment History */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Payment History</h2>
-            <Button variant="outline" onClick={exportToExcel}>
-              <Download className="h-4 w-4 mr-2" />
-              Export to Excel
-            </Button>
-          </div>
-          <DataTable
-            columns={paymentColumns}
-            data={paymentHistory}
-            emptyMessage="No payment history found"
-          />
+      {/* Performance Summary */}
+      <div>
+        <h2 className="text-lg font-semibold mb-4">Performance Summary</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" />
+                Repayment Rate
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className={`text-3xl font-bold ${
+                metrics.repaymentRate >= 80 ? 'text-success' :
+                metrics.repaymentRate >= 60 ? 'text-warning' : 'text-destructive'
+              }`}>
+                {metrics.repaymentRate}%
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {metrics.onTimePayments} of {metrics.totalPayments} on-time
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
+                Total Paid
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-success">{formatCurrency(metrics.totalPaid)}</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                All payments combined
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4" />
+                Defaults
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className={`text-2xl font-bold ${metrics.defaultCount > 0 ? 'text-destructive' : 'text-success'}`}>
+                {metrics.defaultCount}
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                90+ days overdue
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Outstanding Balance
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">{formatCurrency(metrics.outstandingBalance)}</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {metrics.activeLoans} active loans
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Loan Completion
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-success">{metrics.completedLoans}</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Loans fully repaid
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
-    </DashboardLayout>
+
+      {/* Payment History */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">Payment History</h2>
+          <Button variant="outline" onClick={exportToExcel}>
+            <Download className="h-4 w-4 mr-2" />
+            Export to Excel
+          </Button>
+        </div>
+        <DataTable
+          columns={paymentColumns}
+          data={paymentHistory}
+          emptyMessage="No payment history found"
+        />
+      </div>
+    </div>
   );
 }

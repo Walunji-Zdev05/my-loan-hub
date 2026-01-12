@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
+
 import { DataTable } from '@/components/shared/DataTable';
 import { StatCard } from '@/components/shared/StatCard';
 import { Button } from '@/components/ui/button';
@@ -156,102 +156,100 @@ export default function Ledger() {
   ];
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight lg:text-3xl">Ledger</h1>
-            <p className="text-muted-foreground">Track all income sources and transactions</p>
-          </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight lg:text-3xl">Ledger</h1>
+          <p className="text-muted-foreground">Track all income sources and transactions</p>
         </div>
+      </div>
 
-        {/* Summary Cards */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            title="This Month"
-            value={formatCurrency(monthlyIncome)}
-            subtitle="January 2026"
-            icon={<BookOpen className="h-5 w-5" />}
-            variant="primary"
-          />
-          <StatCard
-            title="This Year"
-            value={formatCurrency(yearlyIncome)}
-            subtitle="Year to date"
-            icon={<TrendingUp className="h-5 w-5" />}
-            variant="accent"
-          />
-          <StatCard
-            title="Filtered Total"
-            value={formatCurrency(filteredTotal)}
-            subtitle={`${totalEntries} entries`}
-            icon={<BookOpen className="h-5 w-5" />}
-          />
-          <StatCard
-            title="Avg. Transaction"
-            value={formatCurrency(totalEntries > 0 ? Math.round(filteredTotal / totalEntries) : 0)}
-            subtitle="Per entry"
-            icon={<TrendingUp className="h-5 w-5" />}
-          />
-        </div>
-
-        {/* Filters */}
-        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-4">
-          <span className="text-sm font-medium text-muted-foreground">Filter by date:</span>
-          
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className={cn('w-[180px] justify-start text-left font-normal', !startDate && 'text-muted-foreground')}>
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {startDate ? format(startDate, 'MMM dd, yyyy') : 'Start date'}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={startDate}
-                onSelect={setStartDate}
-                initialFocus
-                className="p-3 pointer-events-auto"
-              />
-            </PopoverContent>
-          </Popover>
-
-          <span className="text-muted-foreground">to</span>
-
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className={cn('w-[180px] justify-start text-left font-normal', !endDate && 'text-muted-foreground')}>
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {endDate ? format(endDate, 'MMM dd, yyyy') : 'End date'}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={endDate}
-                onSelect={setEndDate}
-                initialFocus
-                className="p-3 pointer-events-auto"
-              />
-            </PopoverContent>
-          </Popover>
-
-          {(startDate || endDate) && (
-            <Button variant="ghost" size="sm" onClick={clearFilters}>
-              Clear filters
-            </Button>
-          )}
-        </div>
-
-        {/* Ledger Table */}
-        <DataTable
-          columns={columns}
-          data={ledgerEntries}
-          emptyMessage="No ledger entries found for the selected date range"
+      {/* Summary Cards */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          title="This Month"
+          value={formatCurrency(monthlyIncome)}
+          subtitle="January 2026"
+          icon={<BookOpen className="h-5 w-5" />}
+          variant="primary"
+        />
+        <StatCard
+          title="This Year"
+          value={formatCurrency(yearlyIncome)}
+          subtitle="Year to date"
+          icon={<TrendingUp className="h-5 w-5" />}
+          variant="accent"
+        />
+        <StatCard
+          title="Filtered Total"
+          value={formatCurrency(filteredTotal)}
+          subtitle={`${totalEntries} entries`}
+          icon={<BookOpen className="h-5 w-5" />}
+        />
+        <StatCard
+          title="Avg. Transaction"
+          value={formatCurrency(totalEntries > 0 ? Math.round(filteredTotal / totalEntries) : 0)}
+          subtitle="Per entry"
+          icon={<TrendingUp className="h-5 w-5" />}
         />
       </div>
-    </DashboardLayout>
+
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-4">
+        <span className="text-sm font-medium text-muted-foreground">Filter by date:</span>
+        
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className={cn('w-[180px] justify-start text-left font-normal', !startDate && 'text-muted-foreground')}>
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {startDate ? format(startDate, 'MMM dd, yyyy') : 'Start date'}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={startDate}
+              onSelect={setStartDate}
+              initialFocus
+              className="p-3 pointer-events-auto"
+            />
+          </PopoverContent>
+        </Popover>
+
+        <span className="text-muted-foreground">to</span>
+
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className={cn('w-[180px] justify-start text-left font-normal', !endDate && 'text-muted-foreground')}>
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {endDate ? format(endDate, 'MMM dd, yyyy') : 'End date'}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={endDate}
+              onSelect={setEndDate}
+              initialFocus
+              className="p-3 pointer-events-auto"
+            />
+          </PopoverContent>
+        </Popover>
+
+        {(startDate || endDate) && (
+          <Button variant="ghost" size="sm" onClick={clearFilters}>
+            Clear filters
+          </Button>
+        )}
+      </div>
+
+      {/* Ledger Table */}
+      <DataTable
+        columns={columns}
+        data={ledgerEntries}
+        emptyMessage="No ledger entries found for the selected date range"
+      />
+    </div>
   );
 }

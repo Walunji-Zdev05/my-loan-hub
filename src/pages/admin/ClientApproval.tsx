@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Check, AlertCircle, Eye, DollarSign } from 'lucide-react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
+
 import { DataTable } from '@/components/shared/DataTable';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -155,174 +155,172 @@ export default function ClientApproval() {
   ];
 
   return (
-    <DashboardLayout requiredRole="admin">
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">Client Approval</h1>
-          <p className="mt-1 text-muted-foreground">
-            Review pending applications and confirm application fee payments
-          </p>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Client Approval</h1>
+        <p className="mt-1 text-muted-foreground">
+          Review pending applications and confirm application fee payments
+        </p>
+      </div>
 
-        {/* Summary Cards */}
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Pending Approval
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">{applications.length}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Fee Pending
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-warning">
-                {applications.filter(a => !a.applicationFeePaid).length}
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Ready to Approve
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-success">
-                {applications.filter(a => a.applicationFeePaid).length}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+      {/* Summary Cards */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Pending Approval
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{applications.length}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Fee Pending
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-warning">
+              {applications.filter(a => !a.applicationFeePaid).length}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Ready to Approve
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-success">
+              {applications.filter(a => a.applicationFeePaid).length}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
-        {/* Applications Table */}
-        <DataTable
-          columns={columns}
-          data={applications}
-          emptyMessage="No pending applications"
-        />
+      {/* Applications Table */}
+      <DataTable
+        columns={columns}
+        data={applications}
+        emptyMessage="No pending applications"
+      />
 
-        {/* Details Dialog */}
-        <Dialog open={showDetails} onOpenChange={setShowDetails}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Application Details</DialogTitle>
-            </DialogHeader>
-            {selectedApp && (
-              <div className="space-y-4">
-                {/* Client Info */}
-                <div className="rounded-lg bg-muted/50 p-4 space-y-2">
-                  <h4 className="font-medium">Client Information</h4>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Name:</span>
-                      <p className="font-medium">{selectedApp.clientName}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">National ID:</span>
-                      <p className="font-medium">{selectedApp.nationalId}</p>
-                    </div>
-                    {(() => {
-                      const client = getClientDetails(selectedApp.clientId);
-                      return client ? (
-                        <>
-                          <div>
-                            <span className="text-muted-foreground">Phone:</span>
-                            <p className="font-medium">{client.phone}</p>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Email:</span>
-                            <p className="font-medium">{client.email}</p>
-                          </div>
-                        </>
-                      ) : null;
-                    })()}
+      {/* Details Dialog */}
+      <Dialog open={showDetails} onOpenChange={setShowDetails}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Application Details</DialogTitle>
+          </DialogHeader>
+          {selectedApp && (
+            <div className="space-y-4">
+              {/* Client Info */}
+              <div className="rounded-lg bg-muted/50 p-4 space-y-2">
+                <h4 className="font-medium">Client Information</h4>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Name:</span>
+                    <p className="font-medium">{selectedApp.clientName}</p>
                   </div>
-                </div>
-
-                {/* Loan Details */}
-                <div className="rounded-lg bg-muted/50 p-4 space-y-2">
-                  <h4 className="font-medium">Loan Details</h4>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Product:</span>
-                      <p className="font-medium">{selectedApp.product}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Amount:</span>
-                      <p className="font-medium">{formatCurrency(selectedApp.amount)}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Term:</span>
-                      <p className="font-medium">{selectedApp.term} {selectedApp.termUnit}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Purpose:</span>
-                      <p className="font-medium">{selectedApp.purpose}</p>
-                    </div>
+                  <div>
+                    <span className="text-muted-foreground">National ID:</span>
+                    <p className="font-medium">{selectedApp.nationalId}</p>
                   </div>
-                </div>
-
-                {/* Fee Status */}
-                <div className={cn(
-                  'flex items-center justify-between p-4 rounded-lg',
-                  selectedApp.applicationFeePaid ? 'bg-success/10' : 'bg-warning/10'
-                )}>
-                  <div className="flex items-center gap-2">
-                    {selectedApp.applicationFeePaid ? (
-                      <Check className="h-5 w-5 text-success" />
-                    ) : (
-                      <AlertCircle className="h-5 w-5 text-warning" />
-                    )}
-                    <span className={selectedApp.applicationFeePaid ? 'text-success' : 'text-warning'}>
-                      Application Fee: {formatCurrency(selectedApp.applicationFeeAmount)}
-                    </span>
-                  </div>
-                  {selectedApp.applicationFeePaid && selectedApp.applicationFeePaidDate && (
-                    <span className="text-sm text-muted-foreground">
-                      Paid: {formatDate(selectedApp.applicationFeePaidDate)}
-                    </span>
-                  )}
+                  {(() => {
+                    const client = getClientDetails(selectedApp.clientId);
+                    return client ? (
+                      <>
+                        <div>
+                          <span className="text-muted-foreground">Phone:</span>
+                          <p className="font-medium">{client.phone}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Email:</span>
+                          <p className="font-medium">{client.email}</p>
+                        </div>
+                      </>
+                    ) : null;
+                  })()}
                 </div>
               </div>
+
+              {/* Loan Details */}
+              <div className="rounded-lg bg-muted/50 p-4 space-y-2">
+                <h4 className="font-medium">Loan Details</h4>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Product:</span>
+                    <p className="font-medium">{selectedApp.product}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Amount:</span>
+                    <p className="font-medium">{formatCurrency(selectedApp.amount)}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Term:</span>
+                    <p className="font-medium">{selectedApp.term} {selectedApp.termUnit}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Purpose:</span>
+                    <p className="font-medium">{selectedApp.purpose}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Fee Status */}
+              <div className={cn(
+                'flex items-center justify-between p-4 rounded-lg',
+                selectedApp.applicationFeePaid ? 'bg-success/10' : 'bg-warning/10'
+              )}>
+                <div className="flex items-center gap-2">
+                  {selectedApp.applicationFeePaid ? (
+                    <Check className="h-5 w-5 text-success" />
+                  ) : (
+                    <AlertCircle className="h-5 w-5 text-warning" />
+                  )}
+                  <span className={selectedApp.applicationFeePaid ? 'text-success' : 'text-warning'}>
+                    Application Fee: {formatCurrency(selectedApp.applicationFeeAmount)}
+                  </span>
+                </div>
+                {selectedApp.applicationFeePaid && selectedApp.applicationFeePaidDate && (
+                  <span className="text-sm text-muted-foreground">
+                    Paid: {formatDate(selectedApp.applicationFeePaidDate)}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            {selectedApp && !selectedApp.applicationFeePaid && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  handleConfirmAppFee(selectedApp.id);
+                  setSelectedApp({ ...selectedApp, applicationFeePaid: true, applicationFeePaidDate: new Date().toISOString().split('T')[0] });
+                }}
+              >
+                <DollarSign className="h-4 w-4 mr-1" />
+                Confirm Fee Payment
+              </Button>
             )}
-            <DialogFooter>
-              {selectedApp && !selectedApp.applicationFeePaid && (
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    handleConfirmAppFee(selectedApp.id);
-                    setSelectedApp({ ...selectedApp, applicationFeePaid: true, applicationFeePaidDate: new Date().toISOString().split('T')[0] });
-                  }}
-                >
-                  <DollarSign className="h-4 w-4 mr-1" />
-                  Confirm Fee Payment
-                </Button>
-              )}
-              <Button
-                variant="destructive"
-                onClick={() => selectedApp && handleReject(selectedApp.id)}
-              >
-                Reject
-              </Button>
-              <Button
-                disabled={!selectedApp?.applicationFeePaid}
-                onClick={() => selectedApp && handleApprove(selectedApp.id)}
-              >
-                <Check className="h-4 w-4 mr-1" />
-                Approve
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
-    </DashboardLayout>
+            <Button
+              variant="destructive"
+              onClick={() => selectedApp && handleReject(selectedApp.id)}
+            >
+              Reject
+            </Button>
+            <Button
+              disabled={!selectedApp?.applicationFeePaid}
+              onClick={() => selectedApp && handleApprove(selectedApp.id)}
+            >
+              <Check className="h-4 w-4 mr-1" />
+              Approve
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }

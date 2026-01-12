@@ -16,6 +16,7 @@ import RepaymentSchedule from "./pages/borrower/RepaymentSchedule";
 import ApplyLoan from "./pages/borrower/ApplyLoan";
 
 // Admin pages
+import { AdminLayout } from "./components/layout/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ClientsList from "./pages/admin/ClientsList";
 import CreateClient from "./pages/admin/CreateClient";
@@ -49,20 +50,22 @@ const App = () => (
             <Route path="/borrower/schedule" element={<RepaymentSchedule />} />
             <Route path="/borrower/apply" element={<ApplyLoan />} />
             
-            {/* Admin Routes */}
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/clients" element={<ClientsList />} />
-            <Route path="/admin/clients/new" element={<CreateClient />} />
-            <Route path="/admin/clients/:clientId" element={<ClientProfile />} />
-            <Route path="/admin/approval" element={<ClientApproval />} />
-            <Route path="/admin/disbursement" element={<ClientDisbursement />} />
-            <Route path="/admin/applications" element={<LoanApplications />} />
-            <Route path="/admin/payments" element={<RecordPayment />} />
-            <Route path="/admin/products" element={<LoanProducts />} />
-            <Route path="/admin/ledger" element={<Ledger />} />
-            <Route path="/admin/loan-book" element={<LoanBook />} />
-            <Route path="/admin/par" element={<PortfolioAtRisk />} />
-            <Route path="/admin/expected" element={<ExpectedLoans />} />
+            {/* Admin Routes - Nested under AdminLayout */}
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="clients" element={<ClientsList />} />
+              <Route path="clients/new" element={<CreateClient />} />
+              <Route path="clients/:clientId" element={<ClientProfile />} />
+              <Route path="approval" element={<ClientApproval />} />
+              <Route path="disbursement" element={<ClientDisbursement />} />
+              <Route path="applications" element={<LoanApplications />} />
+              <Route path="payments" element={<RecordPayment />} />
+              <Route path="products" element={<LoanProducts />} />
+              <Route path="ledger" element={<Ledger />} />
+              <Route path="loan-book" element={<LoanBook />} />
+              <Route path="par" element={<PortfolioAtRisk />} />
+              <Route path="expected" element={<ExpectedLoans />} />
+            </Route>
             
             <Route path="*" element={<NotFound />} />
           </Routes>
