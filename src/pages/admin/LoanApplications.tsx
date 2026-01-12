@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Check, X, Eye, DollarSign, Send, AlertCircle } from 'lucide-react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
+
 import { DataTable } from '@/components/shared/DataTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { Button } from '@/components/ui/button';
@@ -260,92 +260,90 @@ export default function LoanApplications() {
   const dialogContent = getDialogContent();
 
   return (
-    <DashboardLayout requiredRole="admin">
-      <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Loan Applications</h1>
-            <p className="mt-1 text-muted-foreground">
-              Review and process loan applications
-            </p>
-          </div>
-          <div className="flex gap-2">
-            {pendingCount > 0 && (
-              <div className="inline-flex items-center gap-2 rounded-full bg-warning/10 px-4 py-2 text-sm font-medium text-warning">
-                {pendingCount} pending review
-              </div>
-            )}
-            {awaitingFees > 0 && (
-              <div className="inline-flex items-center gap-2 rounded-full bg-accent/10 px-4 py-2 text-sm font-medium text-accent">
-                {awaitingFees} awaiting fees
-              </div>
-            )}
-          </div>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Loan Applications</h1>
+          <p className="mt-1 text-muted-foreground">
+            Review and process loan applications
+          </p>
         </div>
-
-        <DataTable 
-          columns={columns} 
-          data={applications}
-          emptyMessage="No loan applications"
-        />
-
-        {/* Confirmation Dialog */}
-        <Dialog open={!!selectedApp && !!actionType} onOpenChange={() => { setSelectedApp(null); setActionType(null); }}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{dialogContent?.title}</DialogTitle>
-            </DialogHeader>
-            {selectedApp && (
-              <div className="space-y-4">
-                <div className="rounded-lg bg-muted/50 p-4 space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Client</span>
-                    <span className="font-medium">{selectedApp.clientName}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Amount</span>
-                    <span className="font-medium">{formatCurrency(selectedApp.amount)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Product</span>
-                    <span className="font-medium">{selectedApp.product}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Term</span>
-                    <span className="font-medium">{selectedApp.term} {selectedApp.termUnit}</span>
-                  </div>
-                  {(actionType === 'confirmAppFee' || actionType === 'confirmApprovalFee') && (
-                    <div className="flex justify-between border-t border-border pt-3 mt-3">
-                      <span className="text-muted-foreground font-medium">Fee Amount</span>
-                      <span className="font-bold text-accent">
-                        {formatCurrency(actionType === 'confirmAppFee' ? selectedApp.applicationFeeAmount : selectedApp.approvalFeeAmount)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {dialogContent?.description}
-                </p>
-              </div>
-            )}
-            <DialogFooter>
-              <Button variant="outline" onClick={() => { setSelectedApp(null); setActionType(null); }}>
-                Cancel
-              </Button>
-              <Button 
-                variant={actionType === 'reject' ? 'destructive' : actionType === 'disburse' ? 'accent' : 'success'}
-                onClick={confirmAction}
-              >
-                {actionType === 'confirmAppFee' && 'Confirm Payment'}
-                {actionType === 'approve' && 'Approve'}
-                {actionType === 'reject' && 'Reject'}
-                {actionType === 'confirmApprovalFee' && 'Confirm Payment'}
-                {actionType === 'disburse' && 'Disburse Loan'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <div className="flex gap-2">
+          {pendingCount > 0 && (
+            <div className="inline-flex items-center gap-2 rounded-full bg-warning/10 px-4 py-2 text-sm font-medium text-warning">
+              {pendingCount} pending review
+            </div>
+          )}
+          {awaitingFees > 0 && (
+            <div className="inline-flex items-center gap-2 rounded-full bg-accent/10 px-4 py-2 text-sm font-medium text-accent">
+              {awaitingFees} awaiting fees
+            </div>
+          )}
+        </div>
       </div>
-    </DashboardLayout>
+
+      <DataTable 
+        columns={columns} 
+        data={applications}
+        emptyMessage="No loan applications"
+      />
+
+      {/* Confirmation Dialog */}
+      <Dialog open={!!selectedApp && !!actionType} onOpenChange={() => { setSelectedApp(null); setActionType(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{dialogContent?.title}</DialogTitle>
+          </DialogHeader>
+          {selectedApp && (
+            <div className="space-y-4">
+              <div className="rounded-lg bg-muted/50 p-4 space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Client</span>
+                  <span className="font-medium">{selectedApp.clientName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Amount</span>
+                  <span className="font-medium">{formatCurrency(selectedApp.amount)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Product</span>
+                  <span className="font-medium">{selectedApp.product}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Term</span>
+                  <span className="font-medium">{selectedApp.term} {selectedApp.termUnit}</span>
+                </div>
+                {(actionType === 'confirmAppFee' || actionType === 'confirmApprovalFee') && (
+                  <div className="flex justify-between border-t border-border pt-3 mt-3">
+                    <span className="text-muted-foreground font-medium">Fee Amount</span>
+                    <span className="font-bold text-accent">
+                      {formatCurrency(actionType === 'confirmAppFee' ? selectedApp.applicationFeeAmount : selectedApp.approvalFeeAmount)}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {dialogContent?.description}
+              </p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setSelectedApp(null); setActionType(null); }}>
+              Cancel
+            </Button>
+            <Button 
+              variant={actionType === 'reject' ? 'destructive' : actionType === 'disburse' ? 'accent' : 'success'}
+              onClick={confirmAction}
+            >
+              {actionType === 'confirmAppFee' && 'Confirm Payment'}
+              {actionType === 'approve' && 'Approve'}
+              {actionType === 'reject' && 'Reject'}
+              {actionType === 'confirmApprovalFee' && 'Confirm Payment'}
+              {actionType === 'disburse' && 'Disburse Loan'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
