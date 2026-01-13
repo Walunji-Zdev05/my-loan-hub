@@ -32,7 +32,7 @@ export default function RepaymentSchedule() {
   const selectedLoan = loans.find(l => l.id === selectedLoanId);
 
   const formatCurrency = (amount: number) => 
-    new Intl.NumberFormat('en-MW', { style: 'currency', currency: 'MWK' }).format(amount);
+    `K${amount.toLocaleString()}`;
 
   const formatDate = (date: string) => 
     new Date(date).toLocaleDateString('en-MW', { 

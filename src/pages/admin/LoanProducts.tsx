@@ -43,7 +43,7 @@ export default function LoanProducts() {
   });
 
   const formatCurrency = (amount: number) => 
-    new Intl.NumberFormat('en-MW', { style: 'currency', currency: 'MWK' }).format(amount);
+    `K${amount.toLocaleString()}`;
 
   const openModal = (product?: LoanProduct) => {
     if (product) {
@@ -242,7 +242,7 @@ export default function LoanProducts() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="minAmount">Min Amount (MWK)</Label>
+                <Label htmlFor="minAmount">Min Amount (K)</Label>
                 <Input
                   id="minAmount"
                   type="number"
@@ -252,7 +252,7 @@ export default function LoanProducts() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="maxAmount">Max Amount (MWK)</Label>
+                <Label htmlFor="maxAmount">Max Amount (K)</Label>
                 <Input
                   id="maxAmount"
                   type="number"
@@ -322,7 +322,7 @@ export default function LoanProducts() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="applicationFeeAmount">Application Fee (MWK)</Label>
+                <Label htmlFor="applicationFeeAmount">Application Fee (K)</Label>
                 <Input
                   id="applicationFeeAmount"
                   type="number"
@@ -332,7 +332,7 @@ export default function LoanProducts() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="approvalFeeAmount">Approval Fee (MWK)</Label>
+                <Label htmlFor="approvalFeeAmount">Approval Fee (K)</Label>
                 <Input
                   id="approvalFeeAmount"
                   type="number"

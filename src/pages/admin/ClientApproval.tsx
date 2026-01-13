@@ -30,7 +30,7 @@ export default function ClientApproval() {
     });
 
   const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat('en-MW', { style: 'currency', currency: 'MWK' }).format(amount);
+    `K${amount.toLocaleString()}`;
 
   const getClientDetails = (clientId: string) =>
     clients.find(c => c.id === clientId);

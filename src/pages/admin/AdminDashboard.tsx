@@ -43,16 +43,17 @@ export default function AdminDashboard() {
   const loanStatuses = getLoanStatusDistribution();
   const pendingApps = loanApplications.filter(a => a.status === 'pending');
 
-  const formatCurrency = (amount: number) => 
-    new Intl.NumberFormat('en-MW', { 
-      style: 'currency', 
-      currency: 'MWK',
-      notation: 'compact',
-      maximumFractionDigits: 1
-    }).format(amount);
+  const formatCurrency = (amount: number) => {
+    if (amount >= 1000000) {
+      return `K${(amount / 1000000).toFixed(1)}M`;
+    } else if (amount >= 1000) {
+      return `K${(amount / 1000).toFixed(1)}K`;
+    }
+    return `K${amount.toLocaleString()}`;
+  };
 
   const formatFullCurrency = (amount: number) => 
-    new Intl.NumberFormat('en-MW', { style: 'currency', currency: 'MWK' }).format(amount);
+    `K${amount.toLocaleString()}`;
 
   return (
     <div className="space-y-8">

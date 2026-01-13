@@ -33,7 +33,7 @@ const mockLoanBookData: LoanBookEntry[] = [
 ];
 
 const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-MW', { style: 'currency', currency: 'MWK', minimumFractionDigits: 0 }).format(amount);
+  return `K${amount.toLocaleString()}`;
 };
 
 export default function LoanBook() {
