@@ -79,7 +79,7 @@ function ExpectedLoans() {
   const totalRepayments = filteredRepayments.reduce((sum, r) => sum + r.amount, 0);
   const totalIncome = filteredIncome.reduce((sum, i) => sum + i.amount, 0);
 
-  const formatCurrency = (amount: number) => `KES ${amount.toLocaleString()}`;
+  const formatCurrency = (amount: number) => `K${amount.toLocaleString()}`;
 
   const exportToExcel = () => {
     const allData = [

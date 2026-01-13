@@ -35,12 +35,7 @@ const mockLedgerData: Omit<LedgerEntry, 'runningTotal'>[] = [
 ];
 
 const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-MW', {
-    style: 'currency',
-    currency: 'MWK',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
+  return `K${amount.toLocaleString()}`;
 };
 
 const getSourceBadgeStyles = (source: IncomeSource) => {

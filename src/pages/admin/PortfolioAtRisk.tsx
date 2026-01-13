@@ -79,13 +79,13 @@ export default function PortfolioAtRisk() {
   const columns = [
     { key: 'clientName', header: 'Client Name', cell: (item: typeof parLoans[0]) => <span className="font-medium">{item.clientName}</span> },
     { key: 'loanId', header: 'Loan ID', cell: (item: typeof parLoans[0]) => <span className="text-muted-foreground">{item.id}</span> },
-    { key: 'loanAmount', header: 'Loan Amount', cell: (item: typeof parLoans[0]) => `KES ${item.loanAmount.toLocaleString()}` },
-    { key: 'outstandingBalance', header: 'Outstanding', cell: (item: typeof parLoans[0]) => `KES ${item.outstandingBalance.toLocaleString()}` },
+    { key: 'loanAmount', header: 'Loan Amount', cell: (item: typeof parLoans[0]) => `K${item.loanAmount.toLocaleString()}` },
+    { key: 'outstandingBalance', header: 'Outstanding', cell: (item: typeof parLoans[0]) => `K${item.outstandingBalance.toLocaleString()}` },
     { key: 'daysOverdue', header: 'Days Overdue', cell: (item: typeof parLoans[0]) => (
       <span className="font-semibold text-destructive">{item.daysOverdue}</span>
     )},
     { key: 'overdueAmount', header: 'Overdue Amount', cell: (item: typeof parLoans[0]) => (
-      <span className="text-destructive font-medium">KES {item.overdueAmount.toLocaleString()}</span>
+      <span className="text-destructive font-medium">K{item.overdueAmount.toLocaleString()}</span>
     )},
     { key: 'bucket', header: 'Bucket', cell: (item: typeof parLoans[0]) => {
       const bucket = getBucket(item.daysOverdue);
@@ -109,7 +109,7 @@ export default function PortfolioAtRisk() {
       return (
         <div className="bg-popover border border-border rounded-lg p-3 shadow-lg">
           <p className="font-semibold text-foreground">{data.name}</p>
-          <p className="text-sm text-muted-foreground">Amount: KES {data.value.toLocaleString()}</p>
+          <p className="text-sm text-muted-foreground">Amount: K{data.value.toLocaleString()}</p>
           <p className="text-sm text-muted-foreground">Loans: {data.count}</p>
           <p className="text-sm text-muted-foreground">% of Portfolio: {((data.value / totalPortfolio) * 100).toFixed(2)}%</p>
         </div>
@@ -163,7 +163,7 @@ export default function PortfolioAtRisk() {
           <CardContent className="pt-6">
             <div className="text-center">
               <p className="text-sm text-muted-foreground">Total Portfolio</p>
-              <p className="text-2xl font-bold text-foreground">KES {totalPortfolio.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-foreground">K{totalPortfolio.toLocaleString()}</p>
               <p className="text-xs text-muted-foreground mt-1">{parLoans.length + performingLoans.length} active loans</p>
             </div>
           </CardContent>
@@ -172,7 +172,7 @@ export default function PortfolioAtRisk() {
           <CardContent className="pt-6">
             <div className="text-center">
               <p className="text-sm text-muted-foreground">Portfolio at Risk</p>
-              <p className="text-2xl font-bold text-destructive">KES {totalAtRisk.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-destructive">K{totalAtRisk.toLocaleString()}</p>
               <p className="text-xs text-muted-foreground mt-1">{parLoans.length} overdue loans</p>
             </div>
           </CardContent>
@@ -181,7 +181,7 @@ export default function PortfolioAtRisk() {
           <CardContent className="pt-6">
             <div className="text-center">
               <p className="text-sm text-muted-foreground">Total Overdue Amount</p>
-              <p className="text-2xl font-bold text-destructive">KES {totalOverdueAmount.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-destructive">K{totalOverdueAmount.toLocaleString()}</p>
               <p className="text-xs text-muted-foreground mt-1">Arrears across all buckets</p>
             </div>
           </CardContent>
@@ -242,7 +242,7 @@ export default function PortfolioAtRisk() {
                     <span className="text-sm text-muted-foreground">{bucket.count} loans</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">KES {bucket.amount.toLocaleString()}</span>
+                    <span className="text-muted-foreground">K{bucket.amount.toLocaleString()}</span>
                     <span className="font-semibold text-foreground">{bucket.par}% of portfolio</span>
                   </div>
                   <div className="w-full bg-muted rounded-full h-2">

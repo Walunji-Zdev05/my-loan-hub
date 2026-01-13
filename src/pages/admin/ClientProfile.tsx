@@ -115,7 +115,7 @@ export default function ClientProfile() {
     });
 
   const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat('en-MW', { style: 'currency', currency: 'MWK' }).format(amount);
+    `K${amount.toLocaleString()}`;
 
   // Calculate performance metrics
   const calculateMetrics = () => {

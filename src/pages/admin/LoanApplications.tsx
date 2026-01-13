@@ -22,7 +22,7 @@ export default function LoanApplications() {
   const [actionType, setActionType] = useState<'approve' | 'reject' | 'confirmAppFee' | 'confirmApprovalFee' | 'disburse' | null>(null);
 
   const formatCurrency = (amount: number) => 
-    new Intl.NumberFormat('en-MW', { style: 'currency', currency: 'MWK' }).format(amount);
+    `K${amount.toLocaleString()}`;
 
   const formatDate = (date: string) => 
     new Date(date).toLocaleDateString('en-MW', { 
