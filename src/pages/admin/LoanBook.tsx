@@ -5,6 +5,7 @@ import { Download, BookOpenCheck } from 'lucide-react';
 
 interface LoanBookEntry {
   id: string;
+  clientId: string;
   clientName: string;
   loanId: string;
   loanAmount: number;
@@ -20,16 +21,16 @@ interface LoanBookEntry {
 }
 
 const mockLoanBookData: LoanBookEntry[] = [
-  { id: '1', clientName: 'John Banda', loanId: 'LN-001', loanAmount: 500000, interestAmount: 75000, repaymentTerm: 12, totalExpected: 575000, installmentAmount: 47917, frequency: 'Monthly', outstandingBalance: 287500, outstandingPrincipal: 250000, outstandingInterest: 37500, arrearsAmount: 0 },
-  { id: '2', clientName: 'Mary Phiri', loanId: 'LN-002', loanAmount: 250000, interestAmount: 37500, repaymentTerm: 6, totalExpected: 287500, installmentAmount: 47917, frequency: 'Monthly', outstandingBalance: 143750, outstandingPrincipal: 125000, outstandingInterest: 18750, arrearsAmount: 15000 },
-  { id: '3', clientName: 'Peter Mwale', loanId: 'LN-003', loanAmount: 1000000, interestAmount: 150000, repaymentTerm: 24, totalExpected: 1150000, installmentAmount: 47917, frequency: 'Monthly', outstandingBalance: 862500, outstandingPrincipal: 750000, outstandingInterest: 112500, arrearsAmount: 0 },
-  { id: '4', clientName: 'Grace Tembo', loanId: 'LN-004', loanAmount: 150000, interestAmount: 22500, repaymentTerm: 3, totalExpected: 172500, installmentAmount: 57500, frequency: 'Monthly', outstandingBalance: 57500, outstandingPrincipal: 50000, outstandingInterest: 7500, arrearsAmount: 28750 },
-  { id: '5', clientName: 'David Chirwa', loanId: 'LN-005', loanAmount: 750000, interestAmount: 112500, repaymentTerm: 18, totalExpected: 862500, installmentAmount: 47917, frequency: 'Monthly', outstandingBalance: 575000, outstandingPrincipal: 500000, outstandingInterest: 75000, arrearsAmount: 0 },
-  { id: '6', clientName: 'Sarah Kamanga', loanId: 'LN-006', loanAmount: 300000, interestAmount: 45000, repaymentTerm: 12, totalExpected: 345000, installmentAmount: 28750, frequency: 'Monthly', outstandingBalance: 172500, outstandingPrincipal: 150000, outstandingInterest: 22500, arrearsAmount: 8625 },
-  { id: '7', clientName: 'James Nyirenda', loanId: 'LN-007', loanAmount: 450000, interestAmount: 67500, repaymentTerm: 9, totalExpected: 517500, installmentAmount: 57500, frequency: 'Monthly', outstandingBalance: 345000, outstandingPrincipal: 300000, outstandingInterest: 45000, arrearsAmount: 0 },
-  { id: '8', clientName: 'Ruth Mbewe', loanId: 'LN-008', loanAmount: 200000, interestAmount: 30000, repaymentTerm: 6, totalExpected: 230000, installmentAmount: 38333, frequency: 'Monthly', outstandingBalance: 115000, outstandingPrincipal: 100000, outstandingInterest: 15000, arrearsAmount: 19167 },
-  { id: '9', clientName: 'Moses Zulu', loanId: 'LN-009', loanAmount: 600000, interestAmount: 90000, repaymentTerm: 12, totalExpected: 690000, installmentAmount: 57500, frequency: 'Monthly', outstandingBalance: 460000, outstandingPrincipal: 400000, outstandingInterest: 60000, arrearsAmount: 0 },
-  { id: '10', clientName: 'Agnes Kondowe', loanId: 'LN-010', loanAmount: 350000, interestAmount: 52500, repaymentTerm: 8, totalExpected: 402500, installmentAmount: 50313, frequency: 'Monthly', outstandingBalance: 201250, outstandingPrincipal: 175000, outstandingInterest: 26250, arrearsAmount: 12578 },
+  { id: '1', clientId: 'CL-001', clientName: 'John Banda', loanId: 'LN-001', loanAmount: 500000, interestAmount: 75000, repaymentTerm: 12, totalExpected: 575000, installmentAmount: 47917, frequency: 'Monthly', outstandingBalance: 287500, outstandingPrincipal: 250000, outstandingInterest: 37500, arrearsAmount: 0 },
+  { id: '2', clientId: 'CL-002', clientName: 'Mary Phiri', loanId: 'LN-002', loanAmount: 250000, interestAmount: 37500, repaymentTerm: 6, totalExpected: 287500, installmentAmount: 47917, frequency: 'Monthly', outstandingBalance: 143750, outstandingPrincipal: 125000, outstandingInterest: 18750, arrearsAmount: 15000 },
+  { id: '3', clientId: 'CL-003', clientName: 'Peter Mwale', loanId: 'LN-003', loanAmount: 1000000, interestAmount: 150000, repaymentTerm: 24, totalExpected: 1150000, installmentAmount: 47917, frequency: 'Monthly', outstandingBalance: 862500, outstandingPrincipal: 750000, outstandingInterest: 112500, arrearsAmount: 0 },
+  { id: '4', clientId: 'CL-004', clientName: 'Grace Tembo', loanId: 'LN-004', loanAmount: 150000, interestAmount: 22500, repaymentTerm: 3, totalExpected: 172500, installmentAmount: 57500, frequency: 'Monthly', outstandingBalance: 57500, outstandingPrincipal: 50000, outstandingInterest: 7500, arrearsAmount: 28750 },
+  { id: '5', clientId: 'CL-005', clientName: 'David Chirwa', loanId: 'LN-005', loanAmount: 750000, interestAmount: 112500, repaymentTerm: 18, totalExpected: 862500, installmentAmount: 47917, frequency: 'Monthly', outstandingBalance: 575000, outstandingPrincipal: 500000, outstandingInterest: 75000, arrearsAmount: 0 },
+  { id: '6', clientId: 'CL-006', clientName: 'Sarah Kamanga', loanId: 'LN-006', loanAmount: 300000, interestAmount: 45000, repaymentTerm: 12, totalExpected: 345000, installmentAmount: 28750, frequency: 'Monthly', outstandingBalance: 172500, outstandingPrincipal: 150000, outstandingInterest: 22500, arrearsAmount: 8625 },
+  { id: '7', clientId: 'CL-007', clientName: 'James Nyirenda', loanId: 'LN-007', loanAmount: 450000, interestAmount: 67500, repaymentTerm: 9, totalExpected: 517500, installmentAmount: 57500, frequency: 'Monthly', outstandingBalance: 345000, outstandingPrincipal: 300000, outstandingInterest: 45000, arrearsAmount: 0 },
+  { id: '8', clientId: 'CL-008', clientName: 'Ruth Mbewe', loanId: 'LN-008', loanAmount: 200000, interestAmount: 30000, repaymentTerm: 6, totalExpected: 230000, installmentAmount: 38333, frequency: 'Monthly', outstandingBalance: 115000, outstandingPrincipal: 100000, outstandingInterest: 15000, arrearsAmount: 19167 },
+  { id: '9', clientId: 'CL-009', clientName: 'Moses Zulu', loanId: 'LN-009', loanAmount: 600000, interestAmount: 90000, repaymentTerm: 12, totalExpected: 690000, installmentAmount: 57500, frequency: 'Monthly', outstandingBalance: 460000, outstandingPrincipal: 400000, outstandingInterest: 60000, arrearsAmount: 0 },
+  { id: '10', clientId: 'CL-010', clientName: 'Agnes Kondowe', loanId: 'LN-010', loanAmount: 350000, interestAmount: 52500, repaymentTerm: 8, totalExpected: 402500, installmentAmount: 50313, frequency: 'Monthly', outstandingBalance: 201250, outstandingPrincipal: 175000, outstandingInterest: 26250, arrearsAmount: 12578 },
 ];
 
 const formatCurrency = (amount: number) => {
@@ -70,6 +71,7 @@ export default function LoanBook() {
   };
 
   const columns = [
+    { key: 'clientId', header: 'Client ID', cell: (entry: LoanBookEntry) => <span className="font-mono text-xs text-muted-foreground">{entry.clientId}</span> },
     { key: 'clientName', header: 'Client Name', cell: (entry: LoanBookEntry) => <span className="font-medium">{entry.clientName}</span> },
     { key: 'loanId', header: 'Loan ID', cell: (entry: LoanBookEntry) => <span className="text-muted-foreground">{entry.loanId}</span> },
     { key: 'loanAmount', header: 'Loan Amount', cell: (entry: LoanBookEntry) => formatCurrency(entry.loanAmount) },
