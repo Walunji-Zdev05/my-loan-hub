@@ -1,7 +1,10 @@
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DataTable } from '@/components/shared/DataTable';
-import { Download, BookOpenCheck } from 'lucide-react';
+import { Download, BookOpenCheck, Search, X } from 'lucide-react';
 
 interface LoanBookEntry {
   id: string;
@@ -38,15 +41,45 @@ const formatCurrency = (amount: number) => {
 };
 
 export default function LoanBook() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [arrearsFilter, setArrearsFilter] = useState<string>('all');
+
+  const filteredData = useMemo(() => {
+    return mockLoanBookData.filter(entry => {
+      // Search filter
+      const searchLower = searchQuery.toLowerCase();
+      const matchesSearch = searchQuery === '' || 
+        entry.clientName.toLowerCase().includes(searchLower) ||
+        entry.clientId.toLowerCase().includes(searchLower) ||
+        entry.loanId.toLowerCase().includes(searchLower);
+
+      // Arrears filter
+      const matchesArrears = 
+        arrearsFilter === 'all' ||
+        (arrearsFilter === 'with-arrears' && entry.arrearsAmount > 0) ||
+        (arrearsFilter === 'no-arrears' && entry.arrearsAmount === 0);
+
+      return matchesSearch && matchesArrears;
+    });
+  }, [searchQuery, arrearsFilter]);
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setArrearsFilter('all');
+  };
+
+  const hasActiveFilters = searchQuery !== '' || arrearsFilter !== 'all';
+
   const handleExportToExcel = () => {
     const currentDate = new Date();
     const formattedDate = currentDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-');
     const filename = `Loan Book as of ${formattedDate}.csv`;
 
-    const headers = ['Client Name', 'Loan ID', 'Loan Amount', 'Interest Amount', 'Repayment Term', 'Total Expected', 'Installment Amount', 'Frequency', 'Outstanding Balance', 'Outstanding Principal', 'Outstanding Interest', 'Arrears Amount'];
+    const headers = ['Client ID', 'Client Name', 'Loan ID', 'Loan Amount', 'Interest Amount', 'Repayment Term', 'Total Expected', 'Installment Amount', 'Frequency', 'Outstanding Balance', 'Outstanding Principal', 'Outstanding Interest', 'Arrears Amount'];
     const csvContent = [
       headers.join(','),
-      ...mockLoanBookData.map(entry => [
+      ...filteredData.map(entry => [
+        entry.clientId,
         `"${entry.clientName}"`,
         entry.loanId,
         entry.loanAmount,
@@ -90,9 +123,9 @@ export default function LoanBook() {
     )},
   ];
 
-  const totalOutstanding = mockLoanBookData.reduce((sum, e) => sum + e.outstandingBalance, 0);
-  const totalArrears = mockLoanBookData.reduce((sum, e) => sum + e.arrearsAmount, 0);
-  const totalLoans = mockLoanBookData.length;
+  const totalOutstanding = filteredData.reduce((sum, e) => sum + e.outstandingBalance, 0);
+  const totalArrears = filteredData.reduce((sum, e) => sum + e.arrearsAmount, 0);
+  const totalLoans = filteredData.length;
 
   return (
     <div className="space-y-6">
@@ -137,11 +170,45 @@ export default function LoanBook() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Loans</CardTitle>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <CardTitle>All Loans</CardTitle>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search by client or loan ID..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 w-full sm:w-64"
+                />
+              </div>
+              <Select value={arrearsFilter} onValueChange={setArrearsFilter}>
+                <SelectTrigger className="w-full sm:w-40">
+                  <SelectValue placeholder="Arrears Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Loans</SelectItem>
+                  <SelectItem value="with-arrears">With Arrears</SelectItem>
+                  <SelectItem value="no-arrears">No Arrears</SelectItem>
+                </SelectContent>
+              </Select>
+              {hasActiveFilters && (
+                <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1">
+                  <X className="h-4 w-4" />
+                  Clear
+                </Button>
+              )}
+            </div>
+          </div>
+          {hasActiveFilters && (
+            <p className="text-sm text-muted-foreground mt-2">
+              Showing {filteredData.length} of {mockLoanBookData.length} loans
+            </p>
+          )}
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <DataTable columns={columns} data={mockLoanBookData} emptyMessage="No loans found" />
+            <DataTable columns={columns} data={filteredData} emptyMessage="No loans match your search criteria" />
           </div>
         </CardContent>
       </Card>
