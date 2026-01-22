@@ -22,18 +22,18 @@ const generateFakeData = () => {
   ];
 
   const expectedRepayments = [
-    { id: 'REP-001', date: addDays(today, 3), clientName: 'Samuel Kipchoge', amount: 5500, type: 'Repayment', loanId: 'LN-1001' },
-    { id: 'REP-002', date: addDays(today, 5), clientName: 'Alice Wambui', amount: 8200, type: 'Repayment', loanId: 'LN-1002' },
-    { id: 'REP-003', date: addDays(today, 8), clientName: 'Daniel Mwangi', amount: 12000, type: 'Repayment', loanId: 'LN-1003' },
-    { id: 'REP-004', date: addDays(today, 12), clientName: 'Rose Atieno', amount: 6800, type: 'Repayment', loanId: 'LN-1004' },
-    { id: 'REP-005', date: addDays(today, 15), clientName: 'Michael Otieno', amount: 15000, type: 'Repayment', loanId: 'LN-1005' },
-    { id: 'REP-006', date: addDays(today, 18), clientName: 'Elizabeth Njeri', amount: 9500, type: 'Repayment', loanId: 'LN-1006' },
-    { id: 'REP-007', date: addDays(today, 22), clientName: 'Joseph Kariuki', amount: 7200, type: 'Repayment', loanId: 'LN-1007' },
-    { id: 'REP-008', date: addDays(today, 25), clientName: 'Catherine Nyambura', amount: 11000, type: 'Repayment', loanId: 'LN-1008' },
-    { id: 'REP-009', date: addDays(today, 30), clientName: 'Robert Wekesa', amount: 4500, type: 'Repayment', loanId: 'LN-1009' },
-    { id: 'REP-010', date: addDays(today, 35), clientName: 'Anne Chebet', amount: 13500, type: 'Repayment', loanId: 'LN-1010' },
-    { id: 'REP-011', date: addDays(today, 42), clientName: 'Paul Mutua', amount: 8800, type: 'Repayment', loanId: 'LN-1011' },
-    { id: 'REP-012', date: addDays(today, 55), clientName: 'Jane Wangari', amount: 10200, type: 'Repayment', loanId: 'LN-1012' },
+    { id: 'REP-001', date: addDays(today, 3), clientId: 'CL-001', clientName: 'Samuel Kipchoge', amount: 5500, type: 'Repayment', loanId: 'LN-1001' },
+    { id: 'REP-002', date: addDays(today, 5), clientId: 'CL-002', clientName: 'Alice Wambui', amount: 8200, type: 'Repayment', loanId: 'LN-1002' },
+    { id: 'REP-003', date: addDays(today, 8), clientId: 'CL-003', clientName: 'Daniel Mwangi', amount: 12000, type: 'Repayment', loanId: 'LN-1003' },
+    { id: 'REP-004', date: addDays(today, 12), clientId: 'CL-004', clientName: 'Rose Atieno', amount: 6800, type: 'Repayment', loanId: 'LN-1004' },
+    { id: 'REP-005', date: addDays(today, 15), clientId: 'CL-005', clientName: 'Michael Otieno', amount: 15000, type: 'Repayment', loanId: 'LN-1005' },
+    { id: 'REP-006', date: addDays(today, 18), clientId: 'CL-006', clientName: 'Elizabeth Njeri', amount: 9500, type: 'Repayment', loanId: 'LN-1006' },
+    { id: 'REP-007', date: addDays(today, 22), clientId: 'CL-007', clientName: 'Joseph Kariuki', amount: 7200, type: 'Repayment', loanId: 'LN-1007' },
+    { id: 'REP-008', date: addDays(today, 25), clientId: 'CL-008', clientName: 'Catherine Nyambura', amount: 11000, type: 'Repayment', loanId: 'LN-1008' },
+    { id: 'REP-009', date: addDays(today, 30), clientId: 'CL-009', clientName: 'Robert Wekesa', amount: 4500, type: 'Repayment', loanId: 'LN-1009' },
+    { id: 'REP-010', date: addDays(today, 35), clientId: 'CL-010', clientName: 'Anne Chebet', amount: 13500, type: 'Repayment', loanId: 'LN-1010' },
+    { id: 'REP-011', date: addDays(today, 42), clientId: 'CL-011', clientName: 'Paul Mutua', amount: 8800, type: 'Repayment', loanId: 'LN-1011' },
+    { id: 'REP-012', date: addDays(today, 55), clientId: 'CL-012', clientName: 'Jane Wangari', amount: 10200, type: 'Repayment', loanId: 'LN-1012' },
   ];
 
   const projectedIncome = [
@@ -124,8 +124,11 @@ function ExpectedLoans() {
   ];
 
   const repaymentColumns = [
-    { key: 'date', header: 'Date', cell: (item: typeof expectedRepayments[0]) => format(item.date, 'MMM dd, yyyy') },
-    { key: 'client', header: 'Client', cell: (item: typeof expectedRepayments[0]) => item.clientName },
+    { key: 'date', header: 'Due Date', cell: (item: typeof expectedRepayments[0]) => format(item.date, 'MMM dd, yyyy') },
+    { key: 'clientId', header: 'Client ID', cell: (item: typeof expectedRepayments[0]) => (
+      <span className="font-mono text-xs text-muted-foreground">{item.clientId}</span>
+    )},
+    { key: 'client', header: 'Client Name', cell: (item: typeof expectedRepayments[0]) => item.clientName },
     { key: 'amount', header: 'Amount', cell: (item: typeof expectedRepayments[0]) => formatCurrency(item.amount) },
     { key: 'type', header: 'Type', cell: (item: typeof expectedRepayments[0]) => (
       <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
