@@ -1,9 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatCard } from '@/components/shared/StatCard';
 import { DataTable } from '@/components/shared/DataTable';
-import { StatusBadge } from '@/components/shared/StatusBadge';
-import { AlertTriangle, TrendingDown, Clock, AlertCircle } from 'lucide-react';
+import { AlertTriangle, TrendingDown, Clock, AlertCircle, CheckCircle } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 // Fake PAR data with various overdue statuses
 const parLoans = [
@@ -18,13 +18,20 @@ const parLoans = [
   { id: 'LN009', clientName: 'James Taylor', loanAmount: 55000, outstandingBalance: 30000, daysOverdue: 120, overdueAmount: 12000 },
 ];
 
-// Non-overdue loans for total portfolio calculation
+// Non-overdue loans (Active/Performing) for total portfolio calculation
 const performingLoans = [
   { id: 'LN010', clientName: 'Chris Martin', loanAmount: 80000, outstandingBalance: 60000 },
   { id: 'LN011', clientName: 'Amanda White', loanAmount: 95000, outstandingBalance: 75000 },
   { id: 'LN012', clientName: 'Kevin Harris', loanAmount: 40000, outstandingBalance: 25000 },
   { id: 'LN013', clientName: 'Rachel Green', loanAmount: 70000, outstandingBalance: 55000 },
   { id: 'LN014', clientName: 'Tom Baker', loanAmount: 65000, outstandingBalance: 45000 },
+  { id: 'LN015', clientName: 'Nancy Drew', loanAmount: 110000, outstandingBalance: 90000 },
+  { id: 'LN016', clientName: 'Mark Spencer', loanAmount: 85000, outstandingBalance: 70000 },
+  { id: 'LN017', clientName: 'Julie Chen', loanAmount: 55000, outstandingBalance: 40000 },
+  { id: 'LN018', clientName: 'Brian Moore', loanAmount: 120000, outstandingBalance: 100000 },
+  { id: 'LN019', clientName: 'Emma Watson', loanAmount: 75000, outstandingBalance: 65000 },
+  { id: 'LN020', clientName: 'Daniel Craig', loanAmount: 90000, outstandingBalance: 80000 },
+  { id: 'LN021', clientName: 'Sophie Turner', loanAmount: 45000, outstandingBalance: 35000 },
 ];
 
 const getBucket = (daysOverdue: number): string => {
@@ -44,6 +51,7 @@ const getBucketColor = (bucket: string): string => {
 
 export default function PortfolioAtRisk() {
   // Calculate totals
+  const performingAmount = performingLoans.reduce((sum, loan) => sum + loan.outstandingBalance, 0);
   const totalPortfolio = [...parLoans, ...performingLoans].reduce((sum, loan) => sum + loan.outstandingBalance, 0);
   const totalAtRisk = parLoans.reduce((sum, loan) => sum + loan.outstandingBalance, 0);
   const totalOverdueAmount = parLoans.reduce((sum, loan) => sum + loan.overdueAmount, 0);
@@ -58,22 +66,61 @@ export default function PortfolioAtRisk() {
   const bucket61plusAmount = bucket61plus.reduce((sum, l) => sum + l.outstandingBalance, 0);
 
   // Calculate PAR percentages
+  const performingPercent = ((performingAmount / totalPortfolio) * 100).toFixed(2);
   const par1to30 = ((bucket1to30Amount / totalPortfolio) * 100).toFixed(2);
   const par31to60 = ((bucket31to60Amount / totalPortfolio) * 100).toFixed(2);
   const par61plus = ((bucket61plusAmount / totalPortfolio) * 100).toFixed(2);
   const totalPAR = ((totalAtRisk / totalPortfolio) * 100).toFixed(2);
 
-  // Pie chart data
-  const pieData = [
+  // Full Portfolio Distribution Pie Chart Data (including performing loans)
+  const portfolioDistributionData = [
+    { name: 'Active/Performing Loans', value: performingAmount, count: performingLoans.length },
     { name: 'PAR 1-30 days', value: bucket1to30Amount, count: bucket1to30.length },
     { name: 'PAR 31-60 days', value: bucket31to60Amount, count: bucket31to60.length },
     { name: 'PAR 61+ days', value: bucket61plusAmount, count: bucket61plus.length },
   ];
 
-  const COLORS = [
-    'hsl(48, 96%, 53%)',  // warning yellow
-    'hsl(25, 95%, 53%)',  // orange
-    'hsl(0, 84%, 60%)',   // red
+  const PORTFOLIO_COLORS = [
+    'hsl(142, 71%, 45%)',  // green for performing
+    'hsl(48, 96%, 53%)',   // warning yellow
+    'hsl(25, 95%, 53%)',   // orange
+    'hsl(0, 84%, 60%)',    // red
+  ];
+
+  // Bucket breakdown table data (including active loans)
+  const bucketTableData = [
+    { 
+      bucket: 'Active/Performing', 
+      daysOverdue: '0 days', 
+      amount: performingAmount, 
+      percentage: performingPercent, 
+      loanCount: performingLoans.length,
+      color: 'bg-green-500'
+    },
+    { 
+      bucket: 'PAR 1-30 Days', 
+      daysOverdue: '1-30 days', 
+      amount: bucket1to30Amount, 
+      percentage: par1to30, 
+      loanCount: bucket1to30.length,
+      color: 'bg-yellow-500'
+    },
+    { 
+      bucket: 'PAR 31-60 Days', 
+      daysOverdue: '31-60 days', 
+      amount: bucket31to60Amount, 
+      percentage: par31to60, 
+      loanCount: bucket31to60.length,
+      color: 'bg-orange-500'
+    },
+    { 
+      bucket: 'PAR 61+ Days', 
+      daysOverdue: '61+ days', 
+      amount: bucket61plusAmount, 
+      percentage: par61plus, 
+      loanCount: bucket61plus.length,
+      color: 'bg-red-500'
+    },
   ];
 
   const columns = [
@@ -118,15 +165,44 @@ export default function PortfolioAtRisk() {
     return null;
   };
 
+  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }: any) => {
+    const RADIAN = Math.PI / 180;
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+    if (percent < 0.05) return null; // Don't show label for very small slices
+
+    return (
+      <text 
+        x={x} 
+        y={y} 
+        fill="white" 
+        textAnchor="middle" 
+        dominantBaseline="central"
+        className="text-xs font-medium"
+      >
+        {`${(percent * 100).toFixed(1)}%`}
+      </text>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Portfolio at Risk (PAR)</h1>
-        <p className="text-muted-foreground">Overview of overdue loans and risk exposure</p>
+        <p className="text-muted-foreground">Overview of portfolio distribution and risk exposure</p>
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <StatCard
+          title="Active/Performing"
+          value={`${performingPercent}%`}
+          icon={<CheckCircle className="h-5 w-5" />}
+          subtitle={`${performingLoans.length} loans`}
+          className="border-l-4 border-l-green-500"
+        />
         <StatCard
           title="Total PAR %"
           value={`${totalPAR}%`}
@@ -188,75 +264,87 @@ export default function PortfolioAtRisk() {
         </Card>
       </div>
 
-      {/* Pie Chart and Bucket Breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
-              PAR Distribution by Bucket
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
+      {/* Full Portfolio Distribution Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CheckCircle className="h-5 w-5 text-green-500" />
+            Full Portfolio Distribution by Bucket
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Donut Chart */}
+            <div className="h-[350px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={pieData}
+                    data={portfolioDistributionData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={5}
+                    innerRadius={70}
+                    outerRadius={120}
+                    paddingAngle={3}
                     dataKey="value"
+                    labelLine={false}
+                    label={renderCustomizedLabel}
                   >
-                    {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    {portfolioDistributionData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={PORTFOLIO_COLORS[index % PORTFOLIO_COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip content={<CustomTooltip />} />
-                  <Legend />
+                  <Legend 
+                    verticalAlign="bottom" 
+                    height={36}
+                    formatter={(value, entry: any) => (
+                      <span className="text-sm text-foreground">{value}</span>
+                    )}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Bucket Breakdown</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[
-                { label: '1-30 Days', amount: bucket1to30Amount, count: bucket1to30.length, par: par1to30, color: 'bg-yellow-500' },
-                { label: '31-60 Days', amount: bucket31to60Amount, count: bucket31to60.length, par: par31to60, color: 'bg-orange-500' },
-                { label: '61+ Days', amount: bucket61plusAmount, count: bucket61plus.length, par: par61plus, color: 'bg-red-500' },
-              ].map((bucket) => (
-                <div key={bucket.label} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${bucket.color}`} />
-                      <span className="font-medium text-foreground">{bucket.label}</span>
-                    </div>
-                    <span className="text-sm text-muted-foreground">{bucket.count} loans</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">K{bucket.amount.toLocaleString()}</span>
-                    <span className="font-semibold text-foreground">{bucket.par}% of portfolio</span>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-2">
-                    <div 
-                      className={`${bucket.color} h-2 rounded-full transition-all`} 
-                      style={{ width: `${Math.min(parseFloat(bucket.par) * 5, 100)}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
+            {/* Bucket Details Table */}
+            <div>
+              <h3 className="text-sm font-semibold text-foreground mb-3">Bucket Details</h3>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Bucket</TableHead>
+                    <TableHead>Days Overdue</TableHead>
+                    <TableHead className="text-right">Amount (K)</TableHead>
+                    <TableHead className="text-right">% of Portfolio</TableHead>
+                    <TableHead className="text-right"># Loans</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {bucketTableData.map((row) => (
+                    <TableRow key={row.bucket}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-3 h-3 rounded-full ${row.color}`} />
+                          <span className="font-medium">{row.bucket}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{row.daysOverdue}</TableCell>
+                      <TableCell className="text-right font-medium">K{row.amount.toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-semibold">{row.percentage}%</TableCell>
+                      <TableCell className="text-right">{row.loanCount}</TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow className="bg-muted/50 font-semibold">
+                    <TableCell colSpan={2}>Total Portfolio</TableCell>
+                    <TableCell className="text-right">K{totalPortfolio.toLocaleString()}</TableCell>
+                    <TableCell className="text-right">100%</TableCell>
+                    <TableCell className="text-right">{parLoans.length + performingLoans.length}</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Loans Table */}
       <Card>
