@@ -118,34 +118,34 @@ export default function LoanProducts() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Loan Products</h1>
-          <p className="mt-1 text-muted-foreground">
+          <h1 className="text-xl sm:text-2xl font-bold">Loan Products</h1>
+          <p className="mt-1 text-sm sm:text-base text-muted-foreground">
             Manage your loan product offerings
           </p>
         </div>
-        <Button variant="accent" onClick={() => openModal()}>
+        <Button variant="accent" onClick={() => openModal()} className="h-10 sm:h-9 w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Add Product
         </Button>
       </div>
 
       {/* Products Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         {products.map(product => (
           <div 
             key={product.id}
-            className={`rounded-xl border bg-card p-6 transition-all ${
+            className={`rounded-xl border bg-card p-4 sm:p-6 transition-all ${
               product.isActive ? 'border-border' : 'border-dashed opacity-60'
             }`}
           >
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                <Package className="h-5 w-5 text-primary" />
+            <div className="flex items-start justify-between mb-3 sm:mb-4">
+              <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-primary/10">
+                <Package className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 sm:gap-2">
                 <Switch 
                   checked={product.isActive}
                   onCheckedChange={() => toggleStatus(product.id)}
@@ -153,6 +153,7 @@ export default function LoanProducts() {
                 <Button 
                   variant="ghost" 
                   size="icon"
+                  className="h-9 w-9"
                   onClick={() => openModal(product)}
                 >
                   <Edit2 className="h-4 w-4" />
@@ -160,12 +161,12 @@ export default function LoanProducts() {
               </div>
             </div>
 
-            <h3 className="font-semibold text-lg">{product.name}</h3>
+            <h3 className="font-semibold text-base sm:text-lg">{product.name}</h3>
             <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
               {product.description}
             </p>
 
-            <div className="mt-4 pt-4 border-t border-border space-y-2">
+            <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-border space-y-1.5 sm:space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Amount Range</span>
                 <span className="font-medium">

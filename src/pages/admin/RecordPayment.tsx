@@ -52,17 +52,17 @@ export default function RecordPayment() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-2xl space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Record Payment</h1>
-        <p className="mt-1 text-muted-foreground">
+        <h1 className="text-xl sm:text-2xl font-bold">Record Payment</h1>
+        <p className="mt-1 text-sm sm:text-base text-muted-foreground">
           Record a loan repayment from a client
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
         {/* Search & Select Loan */}
-        <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-6 space-y-4">
           <h2 className="font-semibold">Select Loan</h2>
           
           <div className="relative">
@@ -71,7 +71,7 @@ export default function RecordPayment() {
               placeholder="Search by client name or loan ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 h-11 sm:h-10"
             />
           </div>
 
@@ -81,19 +81,19 @@ export default function RecordPayment() {
                 key={loan.id}
                 type="button"
                 onClick={() => setSelectedLoanId(loan.id)}
-                className={`w-full flex items-center justify-between rounded-lg border p-4 text-left transition-colors ${
+                className={`w-full flex flex-col gap-2 rounded-lg border p-3 sm:p-4 text-left transition-colors sm:flex-row sm:items-center sm:justify-between ${
                   selectedLoanId === loan.id 
                     ? 'border-accent bg-accent/5' 
                     : 'border-border hover:bg-muted/50'
                 }`}
               >
-                <div>
-                  <p className="font-medium">{loan.clientName}</p>
-                  <p className="text-sm text-muted-foreground">
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{loan.clientName}</p>
+                  <p className="text-sm text-muted-foreground truncate">
                     {loan.id} · {loan.product}
                   </p>
                 </div>
-                <div className="text-right">
+                <div className="flex items-center justify-between sm:flex-col sm:text-right sm:items-end">
                   <p className="font-medium">{formatCurrency(loan.outstandingBalance)}</p>
                   <p className={`text-sm ${loan.status === 'overdue' ? 'text-destructive' : 'text-muted-foreground'}`}>
                     Outstanding
@@ -111,10 +111,10 @@ export default function RecordPayment() {
 
         {/* Payment Details */}
         {selectedLoan && (
-          <div className="rounded-xl border border-border bg-card p-6 space-y-4 animate-fade-in">
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-6 space-y-4 animate-fade-in">
             <h2 className="font-semibold">Payment Details</h2>
             
-            <div className="rounded-lg bg-muted/50 p-4 space-y-2">
+            <div className="rounded-lg bg-muted/50 p-3 sm:p-4 space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Outstanding Balance</span>
                 <span className="font-medium">{formatCurrency(selectedLoan.outstandingBalance)}</span>
@@ -125,7 +125,7 @@ export default function RecordPayment() {
               </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4">
               <div className="space-y-2">
                 <Label htmlFor="amount">Payment Amount (K)</Label>
                 <Input
@@ -135,12 +135,13 @@ export default function RecordPayment() {
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   max={selectedLoan.outstandingBalance}
+                  className="h-11 sm:h-10"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="method">Payment Method</Label>
                 <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-11 sm:h-10">
                     <SelectValue placeholder="Select method" />
                   </SelectTrigger>
                   <SelectContent>
@@ -153,11 +154,12 @@ export default function RecordPayment() {
             </div>
 
             {/* Quick amount buttons */}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <Button 
                 type="button" 
                 variant="outline" 
                 size="sm"
+                className="h-10 sm:h-9 justify-start sm:justify-center"
                 onClick={() => setAmount(selectedLoan.nextPaymentAmount.toString())}
               >
                 Next Payment ({formatCurrency(selectedLoan.nextPaymentAmount)})
@@ -166,6 +168,7 @@ export default function RecordPayment() {
                 type="button" 
                 variant="outline" 
                 size="sm"
+                className="h-10 sm:h-9 justify-start sm:justify-center"
                 onClick={() => setAmount(selectedLoan.outstandingBalance.toString())}
               >
                 Full Balance ({formatCurrency(selectedLoan.outstandingBalance)})
@@ -179,7 +182,7 @@ export default function RecordPayment() {
           type="submit" 
           variant="accent" 
           size="lg" 
-          className="w-full"
+          className="w-full h-12 sm:h-11 text-base"
           disabled={!selectedLoanId || !amount || !paymentMethod || isSubmitting}
         >
           {isSubmitting ? (

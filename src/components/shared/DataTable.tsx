@@ -13,6 +13,8 @@ interface Column<T> {
   header: string;
   cell: (item: T) => React.ReactNode;
   className?: string;
+  /** Hide this column on mobile screens */
+  hideOnMobile?: boolean;
 }
 
 interface DataTableProps<T> {
@@ -30,42 +32,58 @@ export function DataTable<T extends { id: string }>({
 }: DataTableProps<T>) {
   return (
     <div className={cn('rounded-lg border border-border bg-card overflow-hidden', className)}>
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-muted/50 hover:bg-muted/50">
-            {columns.map((column) => (
-              <TableHead 
-                key={column.key} 
-                className={cn('font-semibold text-foreground', column.className)}
-              >
-                {column.header}
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {data.length === 0 ? (
-            <TableRow>
-              <TableCell 
-                colSpan={columns.length} 
-                className="h-24 text-center text-muted-foreground"
-              >
-                {emptyMessage}
-              </TableCell>
-            </TableRow>
-          ) : (
-            data.map((item) => (
-              <TableRow key={item.id} className="table-row-hover">
+      {/* Horizontal scroll container for mobile */}
+      <div className="overflow-x-auto -mx-px">
+        <div className="min-w-[640px] px-px">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50 hover:bg-muted/50">
                 {columns.map((column) => (
-                  <TableCell key={column.key} className={column.className}>
-                    {column.cell(item)}
-                  </TableCell>
+                  <TableHead 
+                    key={column.key} 
+                    className={cn(
+                      'font-semibold text-foreground whitespace-nowrap',
+                      column.hideOnMobile && 'hidden md:table-cell',
+                      column.className
+                    )}
+                  >
+                    {column.header}
+                  </TableHead>
                 ))}
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            </TableHeader>
+            <TableBody>
+              {data.length === 0 ? (
+                <TableRow>
+                  <TableCell 
+                    colSpan={columns.length} 
+                    className="h-24 text-center text-muted-foreground"
+                  >
+                    {emptyMessage}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                data.map((item) => (
+                  <TableRow key={item.id} className="table-row-hover">
+                    {columns.map((column) => (
+                      <TableCell 
+                        key={column.key} 
+                        className={cn(
+                          'whitespace-nowrap',
+                          column.hideOnMobile && 'hidden md:table-cell',
+                          column.className
+                        )}
+                      >
+                        {column.cell(item)}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
     </div>
   );
 }

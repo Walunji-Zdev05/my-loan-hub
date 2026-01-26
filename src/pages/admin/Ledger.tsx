@@ -151,17 +151,17 @@ export default function Ledger() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight lg:text-3xl">Ledger</h1>
-          <p className="text-muted-foreground">Track all income sources and transactions</p>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight lg:text-3xl">Ledger</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Track all income sources and transactions</p>
         </div>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="This Month"
           value={formatCurrency(monthlyIncome)}
@@ -191,52 +191,54 @@ export default function Ledger() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center rounded-lg border border-border bg-card p-3 sm:p-4">
         <span className="text-sm font-medium text-muted-foreground">Filter by date:</span>
         
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className={cn('w-[180px] justify-start text-left font-normal', !startDate && 'text-muted-foreground')}>
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {startDate ? format(startDate, 'MMM dd, yyyy') : 'Start date'}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className={cn('w-full sm:w-[180px] justify-start text-left font-normal h-10 sm:h-9', !startDate && 'text-muted-foreground')}>
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {startDate ? format(startDate, 'MMM dd, yyyy') : 'Start date'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={startDate}
+                onSelect={setStartDate}
+                initialFocus
+                className="p-3 pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+
+          <span className="text-muted-foreground hidden sm:block">to</span>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className={cn('w-full sm:w-[180px] justify-start text-left font-normal h-10 sm:h-9', !endDate && 'text-muted-foreground')}>
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {endDate ? format(endDate, 'MMM dd, yyyy') : 'End date'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={endDate}
+                onSelect={setEndDate}
+                initialFocus
+                className="p-3 pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+
+          {(startDate || endDate) && (
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="h-10 sm:h-9">
+              Clear filters
             </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={startDate}
-              onSelect={setStartDate}
-              initialFocus
-              className="p-3 pointer-events-auto"
-            />
-          </PopoverContent>
-        </Popover>
-
-        <span className="text-muted-foreground">to</span>
-
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className={cn('w-[180px] justify-start text-left font-normal', !endDate && 'text-muted-foreground')}>
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {endDate ? format(endDate, 'MMM dd, yyyy') : 'End date'}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={endDate}
-              onSelect={setEndDate}
-              initialFocus
-              className="p-3 pointer-events-auto"
-            />
-          </PopoverContent>
-        </Popover>
-
-        {(startDate || endDate) && (
-          <Button variant="ghost" size="sm" onClick={clearFilters}>
-            Clear filters
-          </Button>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Ledger Table */}

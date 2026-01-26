@@ -155,15 +155,15 @@ function ExpectedLoans() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Expected Loans</h1>
-          <p className="text-muted-foreground">Upcoming disbursements, repayments, and projected income</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Expected Loans</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Upcoming disbursements, repayments, and projected income</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <Select value={dateFilter} onValueChange={(value: DateFilter) => setDateFilter(value)}>
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="w-full sm:w-[150px] h-10 sm:h-9">
               <SelectValue placeholder="Filter by date" />
             </SelectTrigger>
             <SelectContent>
@@ -173,7 +173,7 @@ function ExpectedLoans() {
               <SelectItem value="all">All upcoming</SelectItem>
             </SelectContent>
           </Select>
-          <Button onClick={exportToExcel} variant="outline">
+          <Button onClick={exportToExcel} variant="outline" className="h-10 sm:h-9 w-full sm:w-auto">
             <FileDown className="h-4 w-4 mr-2" />
             Export to Excel
           </Button>
@@ -181,7 +181,7 @@ function ExpectedLoans() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-3">
         <StatCard
           title="Expected Disbursements"
           value={formatCurrency(totalDisbursements)}
@@ -207,13 +207,13 @@ function ExpectedLoans() {
 
       {/* Pending Disbursements Table */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
             <DollarSign className="h-5 w-5 text-primary" />
             Pending Disbursements
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 sm:p-6 sm:pt-0">
           <DataTable
             columns={disbursementColumns}
             data={filteredDisbursements}
@@ -224,13 +224,13 @@ function ExpectedLoans() {
 
       {/* Expected Repayments Table */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
             <Calendar className="h-5 w-5 text-purple-500" />
             Expected Repayments
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 sm:p-6 sm:pt-0">
           <DataTable
             columns={repaymentColumns}
             data={filteredRepayments}
@@ -241,13 +241,13 @@ function ExpectedLoans() {
 
       {/* Projected Income Table */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
             <TrendingUp className="h-5 w-5 text-amber-500" />
             Projected Income (Interest + Fees)
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 sm:p-6 sm:pt-0">
           <DataTable
             columns={incomeColumns}
             data={filteredIncome}

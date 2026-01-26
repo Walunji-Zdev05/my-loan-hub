@@ -131,7 +131,7 @@
 
 @layer components {
   .stat-card {
-    @apply bg-card rounded-xl p-6 shadow-card border border-border/50;
+    @apply bg-card rounded-xl p-4 sm:p-6 shadow-card border border-border/50;
     background: var(--gradient-card);
     box-shadow: var(--shadow-card);
   }
@@ -181,6 +181,34 @@
 
   .nav-link-active {
     @apply bg-sidebar-primary text-sidebar-primary-foreground;
+  }
+
+  /* Mobile-first responsive utilities */
+  .mobile-card {
+    @apply p-4 sm:p-6;
+  }
+
+  .mobile-section {
+    @apply space-y-4 sm:space-y-6;
+  }
+
+  .mobile-header {
+    @apply text-xl sm:text-2xl lg:text-3xl;
+  }
+
+  /* Touch-friendly buttons */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Mobile form inputs */
+  .mobile-input {
+    @apply h-11 sm:h-10 text-base sm:text-sm;
+  }
+
+  /* Responsive chart container */
+  .chart-container {
+    @apply h-[250px] sm:h-[280px] lg:h-[320px] w-full;
   }
 }
 

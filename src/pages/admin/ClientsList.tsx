@@ -131,26 +131,26 @@ export default function ClientsList() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Clients</h1>
-        <p className="mt-1 text-muted-foreground">
+        <h1 className="text-xl sm:text-2xl font-bold">Clients</h1>
+        <p className="mt-1 text-sm sm:text-base text-muted-foreground">
           Manage and view all registered clients
         </p>
       </div>
 
       {/* Actions Bar */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="relative max-w-md flex-1">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search by name, ID, or national ID..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-10 h-10 sm:h-9"
           />
         </div>
-        <Button onClick={() => navigate('/admin/clients/new')}>
+        <Button onClick={() => navigate('/admin/clients/new')} className="h-10 sm:h-9 w-full sm:w-auto">
           <Plus className="h-4 w-4 mr-2" />
           Create Client
         </Button>
