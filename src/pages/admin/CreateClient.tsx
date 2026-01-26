@@ -55,29 +55,29 @@ export default function CreateClient() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/admin/clients')}>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center gap-3 sm:gap-4">
+        <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => navigate('/admin/clients')}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">Create New Client</h1>
-          <p className="mt-1 text-muted-foreground">
+          <h1 className="text-xl sm:text-2xl font-bold">Create New Client</h1>
+          <p className="mt-1 text-sm sm:text-base text-muted-foreground">
             Register a new client in the system
           </p>
         </div>
       </div>
 
       <Card className="max-w-2xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
             <User className="h-5 w-5" />
             Client Information
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid gap-4 sm:grid-cols-2">
+        <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+            <div className="grid gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name *</Label>
                 <div className="relative">
@@ -87,7 +87,7 @@ export default function CreateClient() {
                     placeholder="Enter full name"
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
-                    className="pl-10"
+                    className="pl-10 h-11 sm:h-10"
                   />
                 </div>
               </div>
@@ -101,7 +101,7 @@ export default function CreateClient() {
                     placeholder="Enter national ID"
                     value={formData.nationalId}
                     onChange={(e) => handleInputChange('nationalId', e.target.value)}
-                    className="pl-10"
+                    className="pl-10 h-11 sm:h-10"
                   />
                 </div>
               </div>
@@ -115,7 +115,7 @@ export default function CreateClient() {
                     placeholder="+265..."
                     value={formData.phone}
                     onChange={(e) => handleInputChange('phone', e.target.value)}
-                    className="pl-10"
+                    className="pl-10 h-11 sm:h-10"
                   />
                 </div>
               </div>
@@ -130,17 +130,17 @@ export default function CreateClient() {
                     placeholder="email@example.com"
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
-                    className="pl-10"
+                    className="pl-10 h-11 sm:h-10"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-3 pt-4">
-              <Button type="submit" disabled={isSubmitting}>
+            <div className="flex flex-col gap-3 pt-4 sm:flex-row">
+              <Button type="submit" disabled={isSubmitting} className="h-11 sm:h-10 w-full sm:w-auto">
                 {isSubmitting ? 'Creating...' : 'Create Client'}
               </Button>
-              <Button type="button" variant="outline" onClick={() => navigate('/admin/clients')}>
+              <Button type="button" variant="outline" onClick={() => navigate('/admin/clients')} className="h-11 sm:h-10 w-full sm:w-auto">
                 Cancel
               </Button>
             </div>

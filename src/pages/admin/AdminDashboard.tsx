@@ -56,23 +56,23 @@ export default function AdminDashboard() {
     `K${amount.toLocaleString()}`;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4">
         <div>
-          <h1 className="text-2xl font-bold lg:text-3xl">Admin Dashboard</h1>
-          <p className="mt-1 text-muted-foreground">
+          <h1 className="text-xl font-bold sm:text-2xl lg:text-3xl">Admin Dashboard</h1>
+          <p className="mt-1 text-sm sm:text-base text-muted-foreground">
             Overview of your lending operations
           </p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline" asChild>
+        <div className="flex flex-wrap gap-2 sm:gap-3">
+          <Button variant="outline" size="sm" className="h-10 sm:h-9" asChild>
             <Link to="/admin/applications">
               <ClipboardList className="mr-2 h-4 w-4" />
               {pendingApps.length} Pending
             </Link>
           </Button>
-          <Button variant="accent" asChild>
+          <Button variant="accent" size="sm" className="h-10 sm:h-9" asChild>
             <Link to="/admin/payments">
               Record Payment
             </Link>
@@ -111,11 +111,11 @@ export default function AdminDashboard() {
       </div>
 
       {/* Charts Row */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
         {/* Disbursements Chart */}
-        <div className="rounded-xl border border-border bg-card p-6 animate-slide-up">
-          <h2 className="text-lg font-semibold mb-4">Monthly Disbursements</h2>
-          <div className="h-[280px]">
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-6 animate-slide-up">
+          <h2 className="text-base sm:text-lg font-semibold mb-4">Monthly Disbursements</h2>
+          <div className="chart-container">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={disbursements}>
                 <defs>
@@ -152,9 +152,9 @@ export default function AdminDashboard() {
         </div>
 
         {/* Collection Trend */}
-        <div className="rounded-xl border border-border bg-card p-6 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-          <h2 className="text-lg font-semibold mb-4">Collection Performance</h2>
-          <div className="h-[280px]">
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-6 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+          <h2 className="text-base sm:text-lg font-semibold mb-4">Collection Performance</h2>
+          <div className="chart-container">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={collections}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(215, 20%, 88%)" />
@@ -182,11 +182,11 @@ export default function AdminDashboard() {
       </div>
 
       {/* Bottom Row */}
-      <div className="grid gap-6 lg:grid-cols-4">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-4">
         {/* Portfolio Distribution */}
-        <div className="rounded-xl border border-border bg-card p-6 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-          <h2 className="text-lg font-semibold mb-4">Loan Portfolio</h2>
-          <div className="h-[200px]">
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-6 animate-slide-up" style={{ animationDelay: '0.2s' }}>
+          <h2 className="text-base sm:text-lg font-semibold mb-4">Loan Portfolio</h2>
+          <div className="h-[180px] sm:h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -230,9 +230,9 @@ export default function AdminDashboard() {
         </div>
 
         {/* Loan Status Distribution */}
-        <div className="rounded-xl border border-border bg-card p-6 animate-slide-up" style={{ animationDelay: '0.25s' }}>
-          <h2 className="text-lg font-semibold mb-4">Loan Status</h2>
-          <div className="h-[200px]">
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-6 animate-slide-up" style={{ animationDelay: '0.25s' }}>
+          <h2 className="text-base sm:text-lg font-semibold mb-4">Loan Status</h2>
+          <div className="h-[180px] sm:h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -276,9 +276,9 @@ export default function AdminDashboard() {
         </div>
 
         {/* Quick Stats */}
-        <div className="lg:col-span-2 rounded-xl border border-border bg-card p-6 animate-slide-up" style={{ animationDelay: '0.3s' }}>
+        <div className="lg:col-span-2 rounded-xl border border-border bg-card p-4 sm:p-6 animate-slide-up" style={{ animationDelay: '0.3s' }}>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Pending Applications</h2>
+            <h2 className="text-base sm:text-lg font-semibold">Pending Applications</h2>
             <Button variant="ghost" size="sm" asChild>
               <Link to="/admin/applications">
                 View All
@@ -286,20 +286,20 @@ export default function AdminDashboard() {
               </Link>
             </Button>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-2 sm:space-y-3">
             {pendingApps.slice(0, 3).map((app) => (
               <div 
                 key={app.id}
-                className="flex items-center justify-between rounded-lg border border-border p-4"
+                className="flex flex-col gap-2 rounded-lg border border-border p-3 sm:p-4 sm:flex-row sm:items-center sm:justify-between"
               >
-                <div>
-                  <p className="font-medium">{app.clientName}</p>
-                  <p className="text-sm text-muted-foreground">
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{app.clientName}</p>
+                  <p className="text-sm text-muted-foreground truncate">
                     {app.product} · {formatFullCurrency(app.amount)}
                   </p>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm text-muted-foreground">{app.appliedDate}</p>
+                <div className="flex items-center justify-between sm:flex-col sm:text-right sm:items-end gap-1">
+                  <p className="text-xs sm:text-sm text-muted-foreground">{app.appliedDate}</p>
                   <Link 
                     to="/admin/applications" 
                     className="text-sm font-medium text-accent hover:underline"

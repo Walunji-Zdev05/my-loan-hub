@@ -188,14 +188,14 @@ export default function PortfolioAtRisk() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Portfolio at Risk (PAR)</h1>
-        <p className="text-muted-foreground">Overview of portfolio distribution and risk exposure</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">Portfolio at Risk (PAR)</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">Overview of portfolio distribution and risk exposure</p>
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
         <StatCard
           title="Active/Performing"
           value={`${performingPercent}%`}
@@ -234,30 +234,30 @@ export default function PortfolioAtRisk() {
       </div>
 
       {/* Portfolio Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="pt-6">
+      <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-3">
+        <Card className="p-4 sm:p-0">
+          <CardContent className="p-0 sm:pt-6 sm:p-6">
             <div className="text-center">
-              <p className="text-sm text-muted-foreground">Total Portfolio</p>
-              <p className="text-2xl font-bold text-foreground">K{totalPortfolio.toLocaleString()}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">Total Portfolio</p>
+              <p className="text-lg sm:text-2xl font-bold text-foreground">K{totalPortfolio.toLocaleString()}</p>
               <p className="text-xs text-muted-foreground mt-1">{parLoans.length + performingLoans.length} active loans</p>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="p-4 sm:p-0">
+          <CardContent className="p-0 sm:pt-6 sm:p-6">
             <div className="text-center">
-              <p className="text-sm text-muted-foreground">Portfolio at Risk</p>
-              <p className="text-2xl font-bold text-destructive">K{totalAtRisk.toLocaleString()}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">Portfolio at Risk</p>
+              <p className="text-lg sm:text-2xl font-bold text-destructive">K{totalAtRisk.toLocaleString()}</p>
               <p className="text-xs text-muted-foreground mt-1">{parLoans.length} overdue loans</p>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="p-4 sm:p-0">
+          <CardContent className="p-0 sm:pt-6 sm:p-6">
             <div className="text-center">
-              <p className="text-sm text-muted-foreground">Total Overdue Amount</p>
-              <p className="text-2xl font-bold text-destructive">K{totalOverdueAmount.toLocaleString()}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">Total Overdue Amount</p>
+              <p className="text-lg sm:text-2xl font-bold text-destructive">K{totalOverdueAmount.toLocaleString()}</p>
               <p className="text-xs text-muted-foreground mt-1">Arrears across all buckets</p>
             </div>
           </CardContent>
@@ -266,16 +266,16 @@ export default function PortfolioAtRisk() {
 
       {/* Full Portfolio Distribution Chart */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
             <CheckCircle className="h-5 w-5 text-green-500" />
             Full Portfolio Distribution by Bucket
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <CardContent className="p-0 sm:p-6 sm:pt-0">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {/* Donut Chart */}
-            <div className="h-[350px]">
+            <div className="h-[280px] sm:h-[350px] p-4 sm:p-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -306,7 +306,7 @@ export default function PortfolioAtRisk() {
             </div>
 
             {/* Bucket Details Table */}
-            <div>
+            <div className="overflow-x-auto p-4 sm:p-0">
               <h3 className="text-sm font-semibold text-foreground mb-3">Bucket Details</h3>
               <Table>
                 <TableHeader>
@@ -348,10 +348,10 @@ export default function PortfolioAtRisk() {
 
       {/* Loans Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>Overdue Loans Detail</CardTitle>
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-base sm:text-lg">Overdue Loans Detail</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 sm:p-6 sm:pt-0">
           <DataTable columns={columns} data={parLoans} emptyMessage="No overdue loans" />
         </CardContent>
       </Card>
