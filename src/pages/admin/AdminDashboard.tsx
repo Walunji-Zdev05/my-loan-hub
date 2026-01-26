@@ -40,7 +40,7 @@ export default function AdminDashboard() {
   const disbursements = getMonthlyDisbursements();
   const collections = getCollectionTrend();
   const portfolio = getLoanPortfolio();
-  const loanStatuses = getLoanStatusDistribution();
+  const loanStatuses = getLoanStatusDistribution().filter(status => status.name !== 'Paid');
   const pendingApps = loanApplications.filter(a => a.status === 'pending');
 
   const formatCurrency = (amount: number) => {
