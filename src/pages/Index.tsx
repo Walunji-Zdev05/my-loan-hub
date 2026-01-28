@@ -1,17 +1,26 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 import LandingPage from './LandingPage';
+import { Loader2 } from 'lucide-react';
 
 const Index = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, isAdmin, isLoading } = useSupabaseAuth();
 
   useEffect(() => {
-    if (isAuthenticated && user) {
-      navigate(`/${user.role}`);
+    if (!isLoading && isAuthenticated) {
+      navigate(isAdmin ? '/admin' : '/borrower');
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, isAdmin, isLoading, navigate]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   // Show landing page for non-authenticated users
   if (!isAuthenticated) {

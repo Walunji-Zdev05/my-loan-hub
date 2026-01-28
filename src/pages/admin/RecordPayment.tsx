@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CreditCard, Search } from 'lucide-react';
+import { CreditCard, Search, Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,22 +12,31 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { loans, clients } from '@/lib/mockData';
+import { useLoans, useUpdateLoan, LoanWithDetails } from '@/hooks/useLoans';
+import { useCreateRepayment, useCreateLedgerEntry } from '@/hooks/usePayments';
+import { Database } from '@/integrations/supabase/types';
+
+type PaymentMethod = Database['public']['Enums']['payment_method'];
 
 export default function RecordPayment() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLoanId, setSelectedLoanId] = useState('');
   const [amount, setAmount] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | ''>('');
 
-  const activeLoans = loans.filter(l => l.status === 'active' || l.status === 'overdue');
-  
-  const filteredLoans = activeLoans.filter(loan => 
-    loan.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    loan.id.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const { data: loans = [], isLoading: loansLoading } = useLoans(['active', 'overdue']);
+  const updateLoan = useUpdateLoan();
+  const createRepayment = useCreateRepayment();
+  const createLedgerEntry = useCreateLedgerEntry();
+
+  const isSubmitting = updateLoan.isPending || createRepayment.isPending;
+
+  const filteredLoans = loans.filter(loan => {
+    const clientName = `${loan.clients?.first_name} ${loan.clients?.last_name}`.toLowerCase();
+    return clientName.includes(searchQuery.toLowerCase()) ||
+      loan.loan_number.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
   const selectedLoan = loans.find(l => l.id === selectedLoanId);
 
@@ -36,20 +45,61 @@ export default function RecordPayment() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    if (!selectedLoan || !paymentMethod) return;
 
-    toast({
-      title: 'Payment Recorded',
-      description: `Payment of ${formatCurrency(parseFloat(amount))} has been recorded for loan ${selectedLoanId}.`,
-    });
+    const paymentAmount = parseFloat(amount);
+    const newBalance = Number(selectedLoan.outstanding_balance) - paymentAmount;
 
-    setSelectedLoanId('');
-    setAmount('');
-    setPaymentMethod('');
-    setIsSubmitting(false);
+    try {
+      // Create repayment record
+      await createRepayment.mutateAsync({
+        loan_id: selectedLoan.id,
+        amount: paymentAmount,
+        payment_method: paymentMethod,
+      });
+
+      // Create ledger entry
+      await createLedgerEntry.mutateAsync({
+        loan_id: selectedLoan.id,
+        client_id: selectedLoan.client_id,
+        entry_type: 'repayment',
+        amount: paymentAmount,
+        description: `Loan repayment for ${selectedLoan.loan_number}`,
+      });
+
+      // Update loan balance
+      await updateLoan.mutateAsync({
+        id: selectedLoan.id,
+        outstanding_balance: Math.max(0, newBalance),
+        status: newBalance <= 0 ? 'paid' : selectedLoan.status,
+        paid_at: newBalance <= 0 ? new Date().toISOString() : null,
+      });
+
+      toast({
+        title: 'Payment Recorded',
+        description: `Payment of ${formatCurrency(paymentAmount)} has been recorded for loan ${selectedLoan.loan_number}.`,
+      });
+
+      setSelectedLoanId('');
+      setAmount('');
+      setPaymentMethod('');
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to record payment',
+        variant: 'destructive',
+      });
+    }
   };
+
+  if (loansLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-2xl space-y-4 sm:space-y-6">
@@ -88,13 +138,15 @@ export default function RecordPayment() {
                 }`}
               >
                 <div className="min-w-0">
-                  <p className="font-medium truncate">{loan.clientName}</p>
+                  <p className="font-medium truncate">
+                    {loan.clients?.first_name} {loan.clients?.last_name}
+                  </p>
                   <p className="text-sm text-muted-foreground truncate">
-                    {loan.id} · {loan.product}
+                    {loan.loan_number} · {loan.loan_products?.name}
                   </p>
                 </div>
                 <div className="flex items-center justify-between sm:flex-col sm:text-right sm:items-end">
-                  <p className="font-medium">{formatCurrency(loan.outstandingBalance)}</p>
+                  <p className="font-medium">{formatCurrency(Number(loan.outstanding_balance))}</p>
                   <p className={`text-sm ${loan.status === 'overdue' ? 'text-destructive' : 'text-muted-foreground'}`}>
                     Outstanding
                   </p>
@@ -117,11 +169,11 @@ export default function RecordPayment() {
             <div className="rounded-lg bg-muted/50 p-3 sm:p-4 space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Outstanding Balance</span>
-                <span className="font-medium">{formatCurrency(selectedLoan.outstandingBalance)}</span>
+                <span className="font-medium">{formatCurrency(Number(selectedLoan.outstanding_balance))}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Next Payment Due</span>
-                <span className="font-medium">{formatCurrency(selectedLoan.nextPaymentAmount)}</span>
+                <span className="text-muted-foreground">Monthly Payment</span>
+                <span className="font-medium">{formatCurrency(Number(selectedLoan.monthly_payment))}</span>
               </div>
             </div>
 
@@ -134,20 +186,20 @@ export default function RecordPayment() {
                   placeholder="Enter amount"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  max={selectedLoan.outstandingBalance}
+                  max={Number(selectedLoan.outstanding_balance)}
                   className="h-11 sm:h-10"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="method">Payment Method</Label>
-                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}>
                   <SelectTrigger className="h-11 sm:h-10">
                     <SelectValue placeholder="Select method" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="bank">Bank Transfer</SelectItem>
-                    <SelectItem value="mobile">Mobile Money</SelectItem>
+                    <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                    <SelectItem value="mobile_money">Mobile Money</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -160,18 +212,18 @@ export default function RecordPayment() {
                 variant="outline" 
                 size="sm"
                 className="h-10 sm:h-9 justify-start sm:justify-center"
-                onClick={() => setAmount(selectedLoan.nextPaymentAmount.toString())}
+                onClick={() => setAmount(selectedLoan.monthly_payment.toString())}
               >
-                Next Payment ({formatCurrency(selectedLoan.nextPaymentAmount)})
+                Monthly Payment ({formatCurrency(Number(selectedLoan.monthly_payment))})
               </Button>
               <Button 
                 type="button" 
                 variant="outline" 
                 size="sm"
                 className="h-10 sm:h-9 justify-start sm:justify-center"
-                onClick={() => setAmount(selectedLoan.outstandingBalance.toString())}
+                onClick={() => setAmount(selectedLoan.outstanding_balance.toString())}
               >
-                Full Balance ({formatCurrency(selectedLoan.outstandingBalance)})
+                Full Balance ({formatCurrency(Number(selectedLoan.outstanding_balance))})
               </Button>
             </div>
           </div>
@@ -186,7 +238,10 @@ export default function RecordPayment() {
           disabled={!selectedLoanId || !amount || !paymentMethod || isSubmitting}
         >
           {isSubmitting ? (
-            'Recording Payment...'
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Recording Payment...
+            </>
           ) : (
             <>
               <CreditCard className="mr-2 h-4 w-4" />
