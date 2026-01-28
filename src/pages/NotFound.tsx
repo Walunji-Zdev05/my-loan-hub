@@ -4,10 +4,7 @@ import { Home, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const NotFound = () => {
-  const { isAuthenticated, isAdmin } = useSupabaseAuth();
-
-  const dashboardPath = isAdmin ? '/admin' : '/borrower';
-  const dashboardLabel = isAdmin ? 'Admin Dashboard' : 'Dashboard';
+  const { isAuthenticated } = useSupabaseAuth();
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
@@ -23,9 +20,9 @@ const NotFound = () => {
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           {isAuthenticated ? (
             <Button asChild variant="default">
-              <Link to={dashboardPath}>
+              <Link to="/admin">
                 <LayoutDashboard className="mr-2 h-4 w-4" />
-                Go to {dashboardLabel}
+                Go to Dashboard
               </Link>
             </Button>
           ) : (

@@ -71,9 +71,11 @@ export function AdminLayout() {
     return <Navigate to="/login" replace />;
   }
 
-  if (!isAdmin) {
-    return <Navigate to="/borrower" replace />;
-  }
+  // For now, allow any authenticated user to access admin pages
+  // TODO: Re-enable role check when borrower portal is implemented
+  // if (!isAdmin) {
+  //   return <Navigate to="/borrower" replace />;
+  // }
 
   const handleSignOut = async () => {
     await signOut();
