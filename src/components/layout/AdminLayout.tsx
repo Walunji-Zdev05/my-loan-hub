@@ -1,10 +1,11 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { AppSidebar } from './AppSidebar';
-import { useAuth } from '@/contexts/AuthContext';
+import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { LogOut, User, Settings, Bell, AlertCircle, UserCheck, CreditCard, Clock } from 'lucide-react';
+import { LogOut, User, Settings, Bell, AlertCircle, UserCheck, CreditCard, Clock, Loader2 } from 'lucide-react';
 
 const notifications = [
   {
@@ -55,16 +56,31 @@ const notifications = [
 ];
 
 export function AdminLayout() {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, isAdmin, isLoading, signOut } = useSupabaseAuth();
   const unreadCount = notifications.filter(n => n.unread).length;
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  if (user?.role !== 'admin') {
-    return <Navigate to={`/${user?.role}`} replace />;
+  if (!isAdmin) {
+    return <Navigate to="/borrower" replace />;
   }
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
+  const userEmail = user?.email || '';
+  const userInitial = userEmail.charAt(0).toUpperCase() || 'U';
 
   return (
     <SidebarProvider defaultOpen={true}>
@@ -149,12 +165,12 @@ export function AdminLayout() {
                 <Button variant="ghost" className="flex items-center gap-2 px-2">
                   <Avatar className="h-8 w-8">
                     <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                      {user?.name?.charAt(0) || 'U'}
+                      {userInitial}
                     </AvatarFallback>
                   </Avatar>
                   <div className="hidden flex-col items-start text-left md:flex">
-                    <span className="text-sm font-medium">{user?.name}</span>
-                    <span className="text-xs text-muted-foreground capitalize">{user?.role}</span>
+                    <span className="text-sm font-medium">{userEmail}</span>
+                    <span className="text-xs text-muted-foreground capitalize">Admin</span>
                   </div>
                 </Button>
               </DropdownMenuTrigger>
@@ -170,7 +186,7 @@ export function AdminLayout() {
                   Settings
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout} className="text-destructive">
+                <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign Out
                 </DropdownMenuItem>
