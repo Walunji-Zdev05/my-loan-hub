@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, Eye } from 'lucide-react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { DataTable } from '@/components/shared/DataTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { Button } from '@/components/ui/button';
@@ -73,29 +72,27 @@ export default function BorrowerLoans() {
   ];
 
   return (
-    <DashboardLayout requiredRole="borrower">
-      <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">My Loans</h1>
-            <p className="mt-1 text-muted-foreground">
-              View all your loan history and details
-            </p>
-          </div>
-          <Button variant="accent" asChild>
-            <Link to="/borrower/apply">
-              Apply for New Loan
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">My Loans</h1>
+          <p className="mt-1 text-muted-foreground">
+            View all your loan history and details
+          </p>
         </div>
-
-        <DataTable 
-          columns={columns} 
-          data={userLoans}
-          emptyMessage="You don't have any loans yet"
-        />
+        <Button variant="accent" asChild>
+          <Link to="/borrower/apply">
+            Apply for New Loan
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Link>
+        </Button>
       </div>
-    </DashboardLayout>
+
+      <DataTable 
+        columns={columns} 
+        data={userLoans}
+        emptyMessage="You don't have any loans yet"
+      />
+    </div>
   );
 }
