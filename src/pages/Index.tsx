@@ -6,13 +6,14 @@ import { Loader2 } from 'lucide-react';
 
 const Index = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, isAdmin, isLoading } = useSupabaseAuth();
+  const { isAuthenticated, isLoading } = useSupabaseAuth();
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      navigate(isAdmin ? '/admin' : '/borrower');
+      // Always redirect to admin dashboard
+      navigate('/admin');
     }
-  }, [isAuthenticated, isAdmin, isLoading, navigate]);
+  }, [isAuthenticated, isLoading, navigate]);
 
   if (isLoading) {
     return (

@@ -9,13 +9,6 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
-// Borrower pages
-import BorrowerDashboard from "./pages/borrower/BorrowerDashboard";
-import BorrowerLoans from "./pages/borrower/BorrowerLoans";
-import RepaymentSchedule from "./pages/borrower/RepaymentSchedule";
-import ApplyLoan from "./pages/borrower/ApplyLoan";
-import { BorrowerLayout } from "./components/layout/BorrowerLayout";
-
 // Admin pages
 import { AdminLayout } from "./components/layout/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -45,15 +38,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             
-            {/* Borrower Routes - Nested under BorrowerLayout */}
-            <Route path="/borrower" element={<BorrowerLayout />}>
-              <Route index element={<BorrowerDashboard />} />
-              <Route path="loans" element={<BorrowerLoans />} />
-              <Route path="schedule" element={<RepaymentSchedule />} />
-              <Route path="apply" element={<ApplyLoan />} />
-            </Route>
-            
-            {/* Admin Routes - Nested under AdminLayout */}
+            {/* Admin Routes */}
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
               <Route path="clients" element={<ClientsList />} />
