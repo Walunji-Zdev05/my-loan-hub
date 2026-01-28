@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { AppSidebar } from './AppSidebar';
-import { useAuth } from '@/contexts/AuthContext';
+import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -9,14 +9,14 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ children, requiredRole }: DashboardLayoutProps) {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, role } = useSupabaseAuth();
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  if (requiredRole && user?.role !== requiredRole) {
-    return <Navigate to={`/${user?.role}`} replace />;
+  if (requiredRole && role !== requiredRole) {
+    return <Navigate to={`/${role}`} replace />;
   }
 
   return (

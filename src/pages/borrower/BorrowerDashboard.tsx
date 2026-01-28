@@ -11,11 +11,11 @@ import { StatCard } from '@/components/shared/StatCard';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { DataTable } from '@/components/shared/DataTable';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/AuthContext';
+import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 import { loans, payments, generateSchedule } from '@/lib/mockData';
 
 export default function BorrowerDashboard() {
-  const { user } = useAuth();
+  const { user } = useSupabaseAuth();
   
   // Get user's active loan
   const userLoans = loans.filter(l => l.clientId === user?.id);
@@ -70,7 +70,7 @@ export default function BorrowerDashboard() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold lg:text-3xl">
-              Welcome back, {user?.name?.split(' ')[0]}
+              Welcome back, {user?.email?.split('@')[0]}
             </h1>
             <p className="mt-1 text-muted-foreground">
               Here's an overview of your loan status

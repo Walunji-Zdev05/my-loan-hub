@@ -4,11 +4,11 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { DataTable } from '@/components/shared/DataTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/AuthContext';
+import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 import { loans } from '@/lib/mockData';
 
 export default function BorrowerLoans() {
-  const { user } = useAuth();
+  const { user } = useSupabaseAuth();
   const userLoans = loans.filter(l => l.clientId === user?.id);
 
   const formatCurrency = (amount: number) => 

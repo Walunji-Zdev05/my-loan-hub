@@ -3,7 +3,7 @@ import { Calendar, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { DataTable } from '@/components/shared/DataTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
-import { useAuth } from '@/contexts/AuthContext';
+import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 import { loans, generateSchedule, ScheduleItem } from '@/lib/mockData';
 import {
   Select,
@@ -15,7 +15,7 @@ import {
 import { useState, useEffect } from 'react';
 
 export default function RepaymentSchedule() {
-  const { user } = useAuth();
+  const { user } = useSupabaseAuth();
   const [searchParams] = useSearchParams();
   const userLoans = loans.filter(l => l.clientId === user?.id && (l.status === 'active' || l.status === 'overdue'));
   
