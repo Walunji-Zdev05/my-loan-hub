@@ -16,7 +16,7 @@ import {
   AlertTriangle,
   Clock
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 import {
   Sidebar,
   SidebarContent,
@@ -58,10 +58,10 @@ const adminNav: NavItem[] = [
 ];
 
 export function AppSidebar() {
-  const { user } = useAuth();
+  const { role } = useSupabaseAuth();
   const location = useLocation();
   const { state } = useSidebar();
-  const navItems = user?.role === 'admin' ? adminNav : borrowerNav;
+  const navItems = role === 'admin' ? adminNav : borrowerNav;
   const isCollapsed = state === 'collapsed';
 
   return (
