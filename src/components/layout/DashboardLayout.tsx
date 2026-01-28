@@ -2,6 +2,8 @@ import { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { AppSidebar } from './AppSidebar';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import { Loader2 } from 'lucide-react';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -9,24 +11,35 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ children, requiredRole }: DashboardLayoutProps) {
-  const { user, isAuthenticated, role } = useSupabaseAuth();
+  const { isAuthenticated, isLoading, role } = useSupabaseAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  if (requiredRole && role !== requiredRole) {
+  // Wait for role to be determined before redirecting
+  if (requiredRole && role && role !== requiredRole) {
     return <Navigate to={`/${role}`} replace />;
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <AppSidebar />
-      <main className="ml-64 min-h-screen">
-        <div className="p-6 lg:p-8">
-          {children}
-        </div>
-      </main>
-    </div>
+    <SidebarProvider defaultOpen={true}>
+      <div className="flex min-h-screen w-full">
+        <AppSidebar />
+        <SidebarInset>
+          <main className="flex-1 p-6 lg:p-8">
+            {children}
+          </main>
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
   );
 }
