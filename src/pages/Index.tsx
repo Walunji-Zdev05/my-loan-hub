@@ -8,10 +8,10 @@ const Index = () => {
   const { isAuthenticated, user } = useAuth();
 
   useEffect(() => {
-    if (isAuthenticated && user) {
-      navigate(`/${user.role}`);
+    if (isAuthenticated) {
+      navigate('/admin');
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, navigate]);
 
   // Show landing page for non-authenticated users
   if (!isAuthenticated) {

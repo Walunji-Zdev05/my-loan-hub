@@ -1,9 +1,6 @@
 import { useLocation, Link } from 'react-router-dom';
 import { 
   LayoutDashboard, 
-  FileText, 
-  Calendar, 
-  PlusCircle, 
   Users, 
   ClipboardList, 
   CreditCard, 
@@ -16,7 +13,6 @@ import {
   AlertTriangle,
   Clock
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
 import {
   Sidebar,
   SidebarContent,
@@ -36,13 +32,6 @@ interface NavItem {
   icon: React.ElementType;
 }
 
-const borrowerNav: NavItem[] = [
-  { label: 'Dashboard', href: '/borrower', icon: LayoutDashboard },
-  { label: 'My Loans', href: '/borrower/loans', icon: FileText },
-  { label: 'Repayment Schedule', href: '/borrower/schedule', icon: Calendar },
-  { label: 'Apply for Loan', href: '/borrower/apply', icon: PlusCircle },
-];
-
 const adminNav: NavItem[] = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { label: 'Expected Loans', href: '/admin/expected', icon: Clock },
@@ -58,10 +47,8 @@ const adminNav: NavItem[] = [
 ];
 
 export function AppSidebar() {
-  const { user } = useAuth();
   const location = useLocation();
   const { state } = useSidebar();
-  const navItems = user?.role === 'admin' ? adminNav : borrowerNav;
   const isCollapsed = state === 'collapsed';
 
   return (
@@ -84,7 +71,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => {
+              {adminNav.map((item) => {
                 const isActive = location.pathname === item.href;
                 return (
                   <SidebarMenuItem key={item.href}>
