@@ -1,46 +1,74 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Wallet, Users, Shield } from 'lucide-react';
+import { Wallet, Users, Shield, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAuth, UserRole } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [selectedRole, setSelectedRole] = useState<UserRole>('borrower');
+  const [name, setName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSignup, setIsSignup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, signup, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      navigate(`/${user.role}`);
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    const success = login(email, password, selectedRole);
-    
-    if (success) {
+    try {
+      if (isSignup) {
+        const { error } = await signup(email, password, name);
+        if (error) {
+          toast({
+            title: 'Sign up failed',
+            description: error,
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Account created!',
+            description: 'You are now signed in as an admin.',
+          });
+        }
+      } else {
+        const { error } = await login(email, password);
+        if (error) {
+          toast({
+            title: 'Login failed',
+            description: error,
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Welcome back!',
+            description: 'Successfully signed in.',
+          });
+        }
+      }
+    } catch (error) {
       toast({
-        title: 'Welcome back!',
-        description: `Signed in as ${selectedRole}`,
-      });
-      navigate(`/${selectedRole}`);
-    } else {
-      toast({
-        title: 'Login failed',
-        description: 'Please check your credentials',
+        title: 'Error',
+        description: 'An unexpected error occurred',
         variant: 'destructive',
       });
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   return (
@@ -94,59 +122,30 @@ export default function Login() {
           </div>
 
           <div className="text-center lg:text-left">
-            <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>
+            <h2 className="text-2xl font-bold tracking-tight">
+              {isSignup ? 'Create an account' : 'Welcome back'}
+            </h2>
             <p className="mt-2 text-muted-foreground">
-              Sign in to access your dashboard
+              {isSignup ? 'Sign up to get started' : 'Sign in to access your dashboard'}
             </p>
           </div>
 
-          {/* Role selector */}
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => setSelectedRole('borrower')}
-              className={cn(
-                'flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all',
-                selectedRole === 'borrower'
-                  ? 'border-accent bg-accent/5'
-                  : 'border-border hover:border-accent/50'
-              )}
-            >
-              <Users className={cn(
-                'h-6 w-6',
-                selectedRole === 'borrower' ? 'text-accent' : 'text-muted-foreground'
-              )} />
-              <span className={cn(
-                'text-sm font-medium',
-                selectedRole === 'borrower' ? 'text-accent' : 'text-muted-foreground'
-              )}>
-                Borrower
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedRole('admin')}
-              className={cn(
-                'flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all',
-                selectedRole === 'admin'
-                  ? 'border-accent bg-accent/5'
-                  : 'border-border hover:border-accent/50'
-              )}
-            >
-              <Shield className={cn(
-                'h-6 w-6',
-                selectedRole === 'admin' ? 'text-accent' : 'text-muted-foreground'
-              )} />
-              <span className={cn(
-                'text-sm font-medium',
-                selectedRole === 'admin' ? 'text-accent' : 'text-muted-foreground'
-              )}>
-                Admin
-              </span>
-            </button>
-          </div>
-
           <form onSubmit={handleSubmit} className="space-y-5">
+            {isSignup && (
+              <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="John Doe"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required={isSignup}
+                  className="h-11"
+                />
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -162,15 +161,30 @@ export default function Login() {
 
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="h-11"
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="h-11 pr-10"
+                  minLength={6}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {isSignup && (
+                <p className="text-xs text-muted-foreground">
+                  Password must be at least 6 characters
+                </p>
+              )}
             </div>
 
             <Button 
@@ -180,13 +194,19 @@ export default function Login() {
               className="w-full"
               disabled={isLoading}
             >
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {isLoading ? (isSignup ? 'Creating account...' : 'Signing in...') : (isSignup ? 'Create Account' : 'Sign In')}
             </Button>
           </form>
 
-          <p className="text-center text-sm text-muted-foreground">
-            Demo: Use any email and password (4+ chars)
-          </p>
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => setIsSignup(!isSignup)}
+              className="text-sm text-accent hover:underline"
+            >
+              {isSignup ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
