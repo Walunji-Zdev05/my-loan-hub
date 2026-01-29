@@ -5,105 +5,72 @@ import { StatCard } from '@/components/shared/StatCard';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, BookOpen, TrendingUp } from 'lucide-react';
-import { format, isWithinInterval, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
+import { CalendarIcon, BookOpen, TrendingUp, Loader2 } from 'lucide-react';
+import { format, isWithinInterval } from 'date-fns';
 import { cn } from '@/lib/utils';
-
-type IncomeSource = 'Application Fee' | 'Approval Fee' | 'Interest Collected' | 'Penalty';
-
-interface LedgerEntry {
-  id: string;
-  date: Date;
-  source: IncomeSource;
-  amount: number;
-  clientId: string;
-  runningTotal: number;
-}
-
-// Mock ledger data
-const mockLedgerData: Omit<LedgerEntry, 'runningTotal'>[] = [
-  { id: '1', date: new Date('2026-01-02'), source: 'Application Fee', amount: 5000, clientId: 'CLT-001' },
-  { id: '2', date: new Date('2026-01-03'), source: 'Approval Fee', amount: 15000, clientId: 'CLT-002' },
-  { id: '3', date: new Date('2026-01-05'), source: 'Interest Collected', amount: 45000, clientId: 'CLT-001' },
-  { id: '4', date: new Date('2026-01-07'), source: 'Penalty', amount: 2500, clientId: 'CLT-003' },
-  { id: '5', date: new Date('2026-01-08'), source: 'Interest Collected', amount: 32000, clientId: 'CLT-004' },
-  { id: '6', date: new Date('2025-12-15'), source: 'Application Fee', amount: 5000, clientId: 'CLT-005' },
-  { id: '7', date: new Date('2025-12-18'), source: 'Approval Fee', amount: 20000, clientId: 'CLT-005' },
-  { id: '8', date: new Date('2025-12-22'), source: 'Interest Collected', amount: 38000, clientId: 'CLT-002' },
-  { id: '9', date: new Date('2025-12-28'), source: 'Penalty', amount: 3500, clientId: 'CLT-001' },
-  { id: '10', date: new Date('2025-11-20'), source: 'Interest Collected', amount: 55000, clientId: 'CLT-003' },
-];
+import { useLedgerEntries, useLedgerSummary, LedgerEntryWithDetails } from '@/hooks/useLedger';
 
 const formatCurrency = (amount: number) => {
   return `K${amount.toLocaleString()}`;
 };
 
-const getSourceBadgeStyles = (source: IncomeSource) => {
+const getSourceBadgeStyles = (source: string) => {
   switch (source) {
-    case 'Application Fee':
+    case 'application_fee':
       return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
-    case 'Approval Fee':
+    case 'approval_fee':
       return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
-    case 'Interest Collected':
+    case 'interest':
       return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400';
-    case 'Penalty':
+    case 'penalty':
       return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+    case 'repayment':
+      return 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400';
     default:
       return 'bg-muted text-muted-foreground';
   }
 };
 
+const formatEntryType = (type: string) => {
+  return type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+};
+
 export default function Ledger() {
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  
+  const { data: entries, isLoading } = useLedgerEntries({ startDate, endDate });
+  const { data: summary } = useLedgerSummary();
 
-  const today = new Date();
-  const currentMonthStart = startOfMonth(today);
-  const currentMonthEnd = endOfMonth(today);
-  const currentYearStart = startOfYear(today);
-  const currentYearEnd = endOfYear(today);
-
-  // Filter and calculate running totals
+  // Calculate running totals and filter
   const ledgerEntries = useMemo(() => {
-    let filtered = [...mockLedgerData];
+    if (!entries) return [];
+    
+    let filtered = [...entries];
 
     // Apply date filters
     if (startDate && endDate) {
       filtered = filtered.filter(entry =>
-        isWithinInterval(entry.date, { start: startDate, end: endDate })
+        isWithinInterval(new Date(entry.entry_date), { start: startDate, end: endDate })
       );
     } else if (startDate) {
-      filtered = filtered.filter(entry => entry.date >= startDate);
+      filtered = filtered.filter(entry => new Date(entry.entry_date) >= startDate);
     } else if (endDate) {
-      filtered = filtered.filter(entry => entry.date <= endDate);
+      filtered = filtered.filter(entry => new Date(entry.entry_date) <= endDate);
     }
 
-    // Sort by date ascending
-    filtered.sort((a, b) => a.date.getTime() - b.date.getTime());
+    // Sort by date ascending and calculate running totals
+    filtered.sort((a, b) => new Date(a.entry_date).getTime() - new Date(b.entry_date).getTime());
 
-    // Calculate running totals
     let runningTotal = 0;
     return filtered.map(entry => {
-      runningTotal += entry.amount;
+      runningTotal += Number(entry.amount);
       return { ...entry, runningTotal };
     });
-  }, [startDate, endDate]);
-
-  // Calculate summary stats
-  const monthlyIncome = useMemo(() => {
-    return mockLedgerData
-      .filter(entry => isWithinInterval(entry.date, { start: currentMonthStart, end: currentMonthEnd }))
-      .reduce((sum, entry) => sum + entry.amount, 0);
-  }, []);
-
-  const yearlyIncome = useMemo(() => {
-    return mockLedgerData
-      .filter(entry => isWithinInterval(entry.date, { start: currentYearStart, end: currentYearEnd }))
-      .reduce((sum, entry) => sum + entry.amount, 0);
-  }, []);
+  }, [entries, startDate, endDate]);
 
   const totalEntries = ledgerEntries.length;
-  const filteredTotal = ledgerEntries.reduce((sum, entry) => sum + entry.amount, 0);
+  const filteredTotal = ledgerEntries.reduce((sum, entry) => sum + Number(entry.amount), 0);
 
   const clearFilters = () => {
     setStartDate(undefined);
@@ -114,41 +81,53 @@ export default function Ledger() {
     {
       key: 'date',
       header: 'Date',
-      cell: (entry: LedgerEntry) => (
-        <span className="font-medium">{format(entry.date, 'MMM dd, yyyy')}</span>
+      cell: (entry: LedgerEntryWithDetails & { runningTotal: number }) => (
+        <span className="font-medium">{format(new Date(entry.entry_date), 'MMM dd, yyyy')}</span>
       ),
     },
     {
       key: 'source',
       header: 'Source',
-      cell: (entry: LedgerEntry) => (
-        <span className={cn('inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium', getSourceBadgeStyles(entry.source))}>
-          {entry.source}
+      cell: (entry: LedgerEntryWithDetails & { runningTotal: number }) => (
+        <span className={cn('inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium', getSourceBadgeStyles(entry.entry_type))}>
+          {formatEntryType(entry.entry_type)}
         </span>
       ),
     },
     {
       key: 'amount',
       header: 'Amount',
-      cell: (entry: LedgerEntry) => (
-        <span className="font-semibold text-success">{formatCurrency(entry.amount)}</span>
+      cell: (entry: LedgerEntryWithDetails & { runningTotal: number }) => (
+        <span className="font-semibold text-success">{formatCurrency(Number(entry.amount))}</span>
       ),
     },
     {
-      key: 'clientId',
-      header: 'Client ID',
-      cell: (entry: LedgerEntry) => (
-        <span className="font-mono text-sm text-muted-foreground">{entry.clientId}</span>
+      key: 'client',
+      header: 'Client',
+      cell: (entry: LedgerEntryWithDetails & { runningTotal: number }) => (
+        <span className="text-sm text-muted-foreground">
+          {entry.clients ? `${entry.clients.first_name} ${entry.clients.last_name}` : entry.loans?.loan_number || 'N/A'}
+        </span>
       ),
+      hideOnMobile: true,
     },
     {
       key: 'runningTotal',
       header: 'Running Total',
-      cell: (entry: LedgerEntry) => (
+      cell: (entry: LedgerEntryWithDetails & { runningTotal: number }) => (
         <span className="font-bold">{formatCurrency(entry.runningTotal)}</span>
       ),
+      hideOnMobile: true,
     },
   ];
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -164,14 +143,14 @@ export default function Ledger() {
       <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="This Month"
-          value={formatCurrency(monthlyIncome)}
-          subtitle="January 2026"
+          value={formatCurrency(summary?.monthlyIncome || 0)}
+          subtitle={format(new Date(), 'MMMM yyyy')}
           icon={<BookOpen className="h-5 w-5" />}
           variant="primary"
         />
         <StatCard
           title="This Year"
-          value={formatCurrency(yearlyIncome)}
+          value={formatCurrency(summary?.yearlyIncome || 0)}
           subtitle="Year to date"
           icon={<TrendingUp className="h-5 w-5" />}
           variant="accent"

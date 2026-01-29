@@ -1,40 +1,21 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatCard } from '@/components/shared/StatCard';
 import { DataTable } from '@/components/shared/DataTable';
-import { AlertTriangle, TrendingDown, Clock, AlertCircle, CheckCircle } from 'lucide-react';
+import { AlertTriangle, TrendingDown, Clock, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useLoans, LoanWithDetails } from '@/hooks/useLoans';
 
-// Fake PAR data with various overdue statuses
-const parLoans = [
-  { id: 'LN001', clientName: 'John Doe', loanAmount: 50000, outstandingBalance: 35000, daysOverdue: 5, overdueAmount: 2500 },
-  { id: 'LN002', clientName: 'Jane Smith', loanAmount: 75000, outstandingBalance: 45000, daysOverdue: 15, overdueAmount: 4500 },
-  { id: 'LN003', clientName: 'Robert Johnson', loanAmount: 100000, outstandingBalance: 80000, daysOverdue: 25, overdueAmount: 8000 },
-  { id: 'LN004', clientName: 'Emily Davis', loanAmount: 30000, outstandingBalance: 20000, daysOverdue: 35, overdueAmount: 3000 },
-  { id: 'LN005', clientName: 'Michael Wilson', loanAmount: 60000, outstandingBalance: 50000, daysOverdue: 45, overdueAmount: 6000 },
-  { id: 'LN006', clientName: 'Sarah Brown', loanAmount: 85000, outstandingBalance: 70000, daysOverdue: 55, overdueAmount: 9000 },
-  { id: 'LN007', clientName: 'David Lee', loanAmount: 45000, outstandingBalance: 40000, daysOverdue: 70, overdueAmount: 7000 },
-  { id: 'LN008', clientName: 'Lisa Anderson', loanAmount: 120000, outstandingBalance: 95000, daysOverdue: 90, overdueAmount: 15000 },
-  { id: 'LN009', clientName: 'James Taylor', loanAmount: 55000, outstandingBalance: 30000, daysOverdue: 120, overdueAmount: 12000 },
-];
-
-// Non-overdue loans (Active/Performing) for total portfolio calculation
-const performingLoans = [
-  { id: 'LN010', clientName: 'Chris Martin', loanAmount: 80000, outstandingBalance: 60000 },
-  { id: 'LN011', clientName: 'Amanda White', loanAmount: 95000, outstandingBalance: 75000 },
-  { id: 'LN012', clientName: 'Kevin Harris', loanAmount: 40000, outstandingBalance: 25000 },
-  { id: 'LN013', clientName: 'Rachel Green', loanAmount: 70000, outstandingBalance: 55000 },
-  { id: 'LN014', clientName: 'Tom Baker', loanAmount: 65000, outstandingBalance: 45000 },
-  { id: 'LN015', clientName: 'Nancy Drew', loanAmount: 110000, outstandingBalance: 90000 },
-  { id: 'LN016', clientName: 'Mark Spencer', loanAmount: 85000, outstandingBalance: 70000 },
-  { id: 'LN017', clientName: 'Julie Chen', loanAmount: 55000, outstandingBalance: 40000 },
-  { id: 'LN018', clientName: 'Brian Moore', loanAmount: 120000, outstandingBalance: 100000 },
-  { id: 'LN019', clientName: 'Emma Watson', loanAmount: 75000, outstandingBalance: 65000 },
-  { id: 'LN020', clientName: 'Daniel Craig', loanAmount: 90000, outstandingBalance: 80000 },
-  { id: 'LN021', clientName: 'Sophie Turner', loanAmount: 45000, outstandingBalance: 35000 },
-];
-
-const getBucket = (daysOverdue: number): string => {
+const getBucket = (loan: LoanWithDetails): string => {
+  if (loan.status !== 'overdue') return 'Active';
+  
+  // Calculate days overdue based on next_payment_date
+  if (!loan.next_payment_date) return '1-30 days';
+  
+  const dueDate = new Date(loan.next_payment_date);
+  const today = new Date();
+  const daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+  
   if (daysOverdue <= 30) return '1-30 days';
   if (daysOverdue <= 60) return '31-60 days';
   return '61+ days';
@@ -42,52 +23,68 @@ const getBucket = (daysOverdue: number): string => {
 
 const getBucketColor = (bucket: string): string => {
   switch (bucket) {
-    case '1-30 days': return 'hsl(48, 96%, 53%)'; // warning yellow
-    case '31-60 days': return 'hsl(25, 95%, 53%)'; // orange
-    case '61+ days': return 'hsl(0, 84%, 60%)'; // destructive red
+    case 'Active': return 'hsl(142, 71%, 45%)';
+    case '1-30 days': return 'hsl(48, 96%, 53%)';
+    case '31-60 days': return 'hsl(25, 95%, 53%)';
+    case '61+ days': return 'hsl(0, 84%, 60%)';
     default: return 'hsl(var(--muted))';
   }
 };
 
 export default function PortfolioAtRisk() {
+  const { data: activeLoans, isLoading: activeLoading } = useLoans(['active', 'disbursed']);
+  const { data: overdueLoans, isLoading: overdueLoading } = useLoans('overdue');
+  
+  const isLoading = activeLoading || overdueLoading;
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  const performingLoans = activeLoans || [];
+  const parLoans = overdueLoans || [];
+  
   // Calculate totals
-  const performingAmount = performingLoans.reduce((sum, loan) => sum + loan.outstandingBalance, 0);
-  const totalPortfolio = [...parLoans, ...performingLoans].reduce((sum, loan) => sum + loan.outstandingBalance, 0);
-  const totalAtRisk = parLoans.reduce((sum, loan) => sum + loan.outstandingBalance, 0);
-  const totalOverdueAmount = parLoans.reduce((sum, loan) => sum + loan.overdueAmount, 0);
+  const performingAmount = performingLoans.reduce((sum, loan) => sum + Number(loan.outstanding_balance), 0);
+  const totalPortfolio = [...parLoans, ...performingLoans].reduce((sum, loan) => sum + Number(loan.outstanding_balance), 0);
+  const totalAtRisk = parLoans.reduce((sum, loan) => sum + Number(loan.outstanding_balance), 0);
 
-  // Group by buckets
-  const bucket1to30 = parLoans.filter(l => l.daysOverdue >= 1 && l.daysOverdue <= 30);
-  const bucket31to60 = parLoans.filter(l => l.daysOverdue >= 31 && l.daysOverdue <= 60);
-  const bucket61plus = parLoans.filter(l => l.daysOverdue > 60);
+  // Group overdue loans by buckets
+  const bucket1to30 = parLoans.filter(l => getBucket(l) === '1-30 days');
+  const bucket31to60 = parLoans.filter(l => getBucket(l) === '31-60 days');
+  const bucket61plus = parLoans.filter(l => getBucket(l) === '61+ days');
 
-  const bucket1to30Amount = bucket1to30.reduce((sum, l) => sum + l.outstandingBalance, 0);
-  const bucket31to60Amount = bucket31to60.reduce((sum, l) => sum + l.outstandingBalance, 0);
-  const bucket61plusAmount = bucket61plus.reduce((sum, l) => sum + l.outstandingBalance, 0);
+  const bucket1to30Amount = bucket1to30.reduce((sum, l) => sum + Number(l.outstanding_balance), 0);
+  const bucket31to60Amount = bucket31to60.reduce((sum, l) => sum + Number(l.outstanding_balance), 0);
+  const bucket61plusAmount = bucket61plus.reduce((sum, l) => sum + Number(l.outstanding_balance), 0);
 
   // Calculate PAR percentages
-  const performingPercent = ((performingAmount / totalPortfolio) * 100).toFixed(2);
-  const par1to30 = ((bucket1to30Amount / totalPortfolio) * 100).toFixed(2);
-  const par31to60 = ((bucket31to60Amount / totalPortfolio) * 100).toFixed(2);
-  const par61plus = ((bucket61plusAmount / totalPortfolio) * 100).toFixed(2);
-  const totalPAR = ((totalAtRisk / totalPortfolio) * 100).toFixed(2);
+  const performingPercent = totalPortfolio > 0 ? ((performingAmount / totalPortfolio) * 100).toFixed(2) : '0';
+  const par1to30 = totalPortfolio > 0 ? ((bucket1to30Amount / totalPortfolio) * 100).toFixed(2) : '0';
+  const par31to60 = totalPortfolio > 0 ? ((bucket31to60Amount / totalPortfolio) * 100).toFixed(2) : '0';
+  const par61plus = totalPortfolio > 0 ? ((bucket61plusAmount / totalPortfolio) * 100).toFixed(2) : '0';
+  const totalPAR = totalPortfolio > 0 ? ((totalAtRisk / totalPortfolio) * 100).toFixed(2) : '0';
 
-  // Full Portfolio Distribution Pie Chart Data (including performing loans)
+  // Portfolio Distribution Pie Chart Data
   const portfolioDistributionData = [
-    { name: 'Active/Performing Loans', value: performingAmount, count: performingLoans.length },
+    { name: 'Active/Performing', value: performingAmount, count: performingLoans.length },
     { name: 'PAR 1-30 days', value: bucket1to30Amount, count: bucket1to30.length },
     { name: 'PAR 31-60 days', value: bucket31to60Amount, count: bucket31to60.length },
     { name: 'PAR 61+ days', value: bucket61plusAmount, count: bucket61plus.length },
-  ];
+  ].filter(item => item.value > 0);
 
   const PORTFOLIO_COLORS = [
-    'hsl(142, 71%, 45%)',  // green for performing
-    'hsl(48, 96%, 53%)',   // warning yellow
-    'hsl(25, 95%, 53%)',   // orange
-    'hsl(0, 84%, 60%)',    // red
+    'hsl(142, 71%, 45%)',
+    'hsl(48, 96%, 53%)',
+    'hsl(25, 95%, 53%)',
+    'hsl(0, 84%, 60%)',
   ];
 
-  // Bucket breakdown table data (including active loans)
+  // Bucket breakdown table data
   const bucketTableData = [
     { 
       bucket: 'Active/Performing', 
@@ -124,33 +121,52 @@ export default function PortfolioAtRisk() {
   ];
 
   const columns = [
-    { key: 'clientName', header: 'Client Name', cell: (item: typeof parLoans[0]) => <span className="font-medium">{item.clientName}</span> },
-    { key: 'loanId', header: 'Loan ID', cell: (item: typeof parLoans[0]) => <span className="text-muted-foreground">{item.id}</span> },
-    { key: 'loanAmount', header: 'Loan Amount', cell: (item: typeof parLoans[0]) => `K${item.loanAmount.toLocaleString()}` },
-    { key: 'outstandingBalance', header: 'Outstanding', cell: (item: typeof parLoans[0]) => `K${item.outstandingBalance.toLocaleString()}` },
-    { key: 'daysOverdue', header: 'Days Overdue', cell: (item: typeof parLoans[0]) => (
-      <span className="font-semibold text-destructive">{item.daysOverdue}</span>
-    )},
-    { key: 'overdueAmount', header: 'Overdue Amount', cell: (item: typeof parLoans[0]) => (
-      <span className="text-destructive font-medium">K{item.overdueAmount.toLocaleString()}</span>
-    )},
-    { key: 'bucket', header: 'Bucket', cell: (item: typeof parLoans[0]) => {
-      const bucket = getBucket(item.daysOverdue);
-      return (
-        <span 
-          className="px-2 py-1 rounded-full text-xs font-medium"
-          style={{ 
-            backgroundColor: `${getBucketColor(bucket)}20`,
-            color: getBucketColor(bucket)
-          }}
-        >
-          {bucket}
-        </span>
-      );
-    }},
+    { 
+      key: 'clientName', 
+      header: 'Client Name', 
+      cell: (loan: LoanWithDetails) => (
+        <span className="font-medium">{loan.clients?.first_name} {loan.clients?.last_name}</span>
+      )
+    },
+    { 
+      key: 'loanId', 
+      header: 'Loan ID', 
+      cell: (loan: LoanWithDetails) => (
+        <span className="text-muted-foreground font-mono text-xs">{loan.loan_number}</span>
+      )
+    },
+    { 
+      key: 'loanAmount', 
+      header: 'Principal', 
+      cell: (loan: LoanWithDetails) => `K${Number(loan.principal_amount).toLocaleString()}`,
+      hideOnMobile: true,
+    },
+    { 
+      key: 'outstandingBalance', 
+      header: 'Outstanding', 
+      cell: (loan: LoanWithDetails) => `K${Number(loan.outstanding_balance).toLocaleString()}`
+    },
+    { 
+      key: 'bucket', 
+      header: 'Bucket', 
+      cell: (loan: LoanWithDetails) => {
+        const bucket = getBucket(loan);
+        return (
+          <span 
+            className="px-2 py-1 rounded-full text-xs font-medium"
+            style={{ 
+              backgroundColor: `${getBucketColor(bucket)}20`,
+              color: getBucketColor(bucket)
+            }}
+          >
+            {bucket}
+          </span>
+        );
+      }
+    },
   ];
 
-  const CustomTooltip = ({ active, payload }: any) => {
+  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ payload: { name: string; value: number; count: number } }> }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
@@ -158,33 +174,11 @@ export default function PortfolioAtRisk() {
           <p className="font-semibold text-foreground">{data.name}</p>
           <p className="text-sm text-muted-foreground">Amount: K{data.value.toLocaleString()}</p>
           <p className="text-sm text-muted-foreground">Loans: {data.count}</p>
-          <p className="text-sm text-muted-foreground">% of Portfolio: {((data.value / totalPortfolio) * 100).toFixed(2)}%</p>
+          <p className="text-sm text-muted-foreground">% of Portfolio: {totalPortfolio > 0 ? ((data.value / totalPortfolio) * 100).toFixed(2) : 0}%</p>
         </div>
       );
     }
     return null;
-  };
-
-  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }: any) => {
-    const RADIAN = Math.PI / 180;
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-    const y = cy + radius * Math.sin(-midAngle * RADIAN);
-
-    if (percent < 0.05) return null; // Don't show label for very small slices
-
-    return (
-      <text 
-        x={x} 
-        y={y} 
-        fill="white" 
-        textAnchor="middle" 
-        dominantBaseline="central"
-        className="text-xs font-medium"
-      >
-        {`${(percent * 100).toFixed(1)}%`}
-      </text>
-    );
   };
 
   return (
@@ -207,7 +201,6 @@ export default function PortfolioAtRisk() {
           title="Total PAR %"
           value={`${totalPAR}%`}
           icon={<AlertTriangle className="h-5 w-5" />}
-          trend={{ value: 2.3, label: 'vs last month' }}
           className="border-l-4 border-l-destructive"
         />
         <StatCard
@@ -256,53 +249,55 @@ export default function PortfolioAtRisk() {
         <Card className="p-4 sm:p-0">
           <CardContent className="p-0 sm:pt-6 sm:p-6">
             <div className="text-center">
-              <p className="text-xs sm:text-sm text-muted-foreground">Total Overdue Amount</p>
-              <p className="text-lg sm:text-2xl font-bold text-destructive">K{totalOverdueAmount.toLocaleString()}</p>
-              <p className="text-xs text-muted-foreground mt-1">Arrears across all buckets</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">Performing</p>
+              <p className="text-lg sm:text-2xl font-bold text-success">K{performingAmount.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground mt-1">{performingLoans.length} active loans</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Full Portfolio Distribution Chart */}
+      {/* Portfolio Distribution Chart */}
       <Card>
         <CardHeader className="p-4 sm:p-6">
           <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
             <CheckCircle className="h-5 w-5 text-green-500" />
-            Full Portfolio Distribution by Bucket
+            Portfolio Distribution by Bucket
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0 sm:p-6 sm:pt-0">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {/* Donut Chart */}
             <div className="h-[280px] sm:h-[350px] p-4 sm:p-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={portfolioDistributionData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={70}
-                    outerRadius={120}
-                    paddingAngle={3}
-                    dataKey="value"
-                    labelLine={false}
-                    label={renderCustomizedLabel}
-                  >
-                    {portfolioDistributionData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={PORTFOLIO_COLORS[index % PORTFOLIO_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend 
-                    verticalAlign="bottom" 
-                    height={36}
-                    formatter={(value, entry: any) => (
-                      <span className="text-sm text-foreground">{value}</span>
-                    )}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+              {portfolioDistributionData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={portfolioDistributionData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={70}
+                      outerRadius={120}
+                      paddingAngle={3}
+                      dataKey="value"
+                      labelLine={false}
+                    >
+                      {portfolioDistributionData.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={PORTFOLIO_COLORS[index % PORTFOLIO_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend 
+                      verticalAlign="bottom" 
+                      height={36}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  No portfolio data available
+                </div>
+              )}
             </div>
 
             {/* Bucket Details Table */}
@@ -312,7 +307,6 @@ export default function PortfolioAtRisk() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Bucket</TableHead>
-                    <TableHead>Days Overdue</TableHead>
                     <TableHead className="text-right">Amount (K)</TableHead>
                     <TableHead className="text-right">% of Portfolio</TableHead>
                     <TableHead className="text-right"># Loans</TableHead>
@@ -327,14 +321,13 @@ export default function PortfolioAtRisk() {
                           <span className="font-medium">{row.bucket}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-muted-foreground">{row.daysOverdue}</TableCell>
                       <TableCell className="text-right font-medium">K{row.amount.toLocaleString()}</TableCell>
                       <TableCell className="text-right font-semibold">{row.percentage}%</TableCell>
                       <TableCell className="text-right">{row.loanCount}</TableCell>
                     </TableRow>
                   ))}
                   <TableRow className="bg-muted/50 font-semibold">
-                    <TableCell colSpan={2}>Total Portfolio</TableCell>
+                    <TableCell>Total Portfolio</TableCell>
                     <TableCell className="text-right">K{totalPortfolio.toLocaleString()}</TableCell>
                     <TableCell className="text-right">100%</TableCell>
                     <TableCell className="text-right">{parLoans.length + performingLoans.length}</TableCell>
@@ -346,15 +339,17 @@ export default function PortfolioAtRisk() {
         </CardContent>
       </Card>
 
-      {/* Loans Table */}
-      <Card>
-        <CardHeader className="p-4 sm:p-6">
-          <CardTitle className="text-base sm:text-lg">Overdue Loans Detail</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0 sm:p-6 sm:pt-0">
-          <DataTable columns={columns} data={parLoans} emptyMessage="No overdue loans" />
-        </CardContent>
-      </Card>
+      {/* Overdue Loans Table */}
+      {parLoans.length > 0 && (
+        <Card>
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg">Overdue Loans Detail</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 sm:p-6 sm:pt-0">
+            <DataTable columns={columns} data={parLoans} emptyMessage="No overdue loans" />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

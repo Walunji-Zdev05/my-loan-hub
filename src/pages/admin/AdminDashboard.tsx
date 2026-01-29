@@ -4,44 +4,27 @@ import {
   TrendingUp, 
   AlertTriangle, 
   Percent,
-  Users,
   ClipboardList,
-  ArrowRight
+  ArrowRight,
+  Loader2
 } from 'lucide-react';
 import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
   PieChart,
   Pie,
   Cell,
-  BarChart,
-  Bar,
-  Legend
+  ResponsiveContainer,
+  Tooltip
 } from 'recharts';
 
 import { StatCard } from '@/components/shared/StatCard';
 import { Button } from '@/components/ui/button';
-import { 
-  getDashboardStats, 
-  getMonthlyDisbursements, 
-  getCollectionTrend,
-  getLoanPortfolio,
-  getLoanStatusDistribution,
-  loanApplications 
-} from '@/lib/mockData';
+import { useLoanStats, useLoans } from '@/hooks/useLoans';
+import { useClients } from '@/hooks/useClients';
 
 export default function AdminDashboard() {
-  const stats = getDashboardStats();
-  const disbursements = getMonthlyDisbursements();
-  const collections = getCollectionTrend();
-  const portfolio = getLoanPortfolio();
-  const loanStatuses = getLoanStatusDistribution().filter(status => status.name !== 'Paid');
-  const pendingApps = loanApplications.filter(a => a.status === 'pending');
+  const { data: stats, isLoading: statsLoading } = useLoanStats();
+  const { data: pendingLoans, isLoading: loansLoading } = useLoans('applied');
+  const { data: clients } = useClients();
 
   const formatCurrency = (amount: number) => {
     if (amount >= 1000000) {
@@ -54,6 +37,21 @@ export default function AdminDashboard() {
 
   const formatFullCurrency = (amount: number) => 
     `K${amount.toLocaleString()}`;
+
+  // Loan status distribution for pie chart
+  const loanStatuses = [
+    { name: 'Active', value: stats?.activeLoansCount || 0, color: 'hsl(173, 58%, 39%)' },
+    { name: 'Overdue', value: stats?.overdueCount || 0, color: 'hsl(0, 84%, 60%)' },
+    { name: 'Pending', value: pendingLoans?.length || 0, color: 'hsl(38, 92%, 50%)' },
+  ].filter(item => item.value > 0);
+
+  if (statsLoading || loansLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -69,7 +67,7 @@ export default function AdminDashboard() {
           <Button variant="outline" size="sm" className="h-10 sm:h-9" asChild>
             <Link to="/admin/applications">
               <ClipboardList className="mr-2 h-4 w-4" />
-              {pendingApps.length} Pending
+              {pendingLoans?.length || 0} Pending
             </Link>
           </Button>
           <Button variant="accent" size="sm" className="h-10 sm:h-9" asChild>
@@ -84,199 +82,86 @@ export default function AdminDashboard() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Disbursed"
-          value={formatCurrency(stats.totalDisbursed)}
+          value={formatCurrency(stats?.totalDisbursed || 0)}
           icon={<Wallet className="h-5 w-5" />}
-          trend={{ value: 12, label: 'vs last month' }}
           variant="primary"
         />
         <StatCard
           title="Outstanding Balance"
-          value={formatCurrency(stats.outstandingBalance)}
-          subtitle={`${stats.activeLoansCount} active loans`}
+          value={formatCurrency(stats?.outstandingBalance || 0)}
+          subtitle={`${stats?.activeLoansCount || 0} active loans`}
           icon={<TrendingUp className="h-5 w-5" />}
         />
         <StatCard
           title="Overdue Loans"
-          value={stats.overdueCount}
-          subtitle={formatFullCurrency(stats.overdueAmount)}
+          value={stats?.overdueCount || 0}
+          subtitle={formatFullCurrency(stats?.overdueAmount || 0)}
           icon={<AlertTriangle className="h-5 w-5" />}
         />
         <StatCard
           title="Collection Rate"
-          value={`${stats.collectionRate}%`}
+          value={`${stats?.collectionRate || 0}%`}
           icon={<Percent className="h-5 w-5" />}
-          trend={{ value: 3.2, label: 'vs last month' }}
           variant="accent"
         />
       </div>
 
-      {/* Charts Row */}
-      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
-        {/* Disbursements Chart */}
-        <div className="rounded-xl border border-border bg-card p-4 sm:p-6 animate-slide-up">
-          <h2 className="text-base sm:text-lg font-semibold mb-4">Monthly Disbursements</h2>
-          <div className="chart-container">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={disbursements}>
-                <defs>
-                  <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(173, 58%, 39%)" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="hsl(173, 58%, 39%)" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(215, 20%, 88%)" />
-                <XAxis dataKey="month" stroke="hsl(215, 16%, 47%)" fontSize={12} />
-                <YAxis 
-                  stroke="hsl(215, 16%, 47%)" 
-                  fontSize={12}
-                  tickFormatter={(value) => `${value / 1000}K`}
-                />
-                <Tooltip 
-                  formatter={(value: number) => [formatFullCurrency(value), 'Disbursed']}
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(0, 0%, 100%)',
-                    border: '1px solid hsl(215, 20%, 88%)',
-                    borderRadius: '8px'
-                  }}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="amount" 
-                  stroke="hsl(173, 58%, 39%)" 
-                  strokeWidth={2}
-                  fill="url(#colorAmount)" 
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Collection Trend */}
-        <div className="rounded-xl border border-border bg-card p-4 sm:p-6 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-          <h2 className="text-base sm:text-lg font-semibold mb-4">Collection Performance</h2>
-          <div className="chart-container">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={collections}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(215, 20%, 88%)" />
-                <XAxis dataKey="month" stroke="hsl(215, 16%, 47%)" fontSize={12} />
-                <YAxis 
-                  stroke="hsl(215, 16%, 47%)" 
-                  fontSize={12}
-                  tickFormatter={(value) => `${value / 1000}K`}
-                />
-                <Tooltip 
-                  formatter={(value: number) => formatFullCurrency(value)}
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(0, 0%, 100%)',
-                    border: '1px solid hsl(215, 20%, 88%)',
-                    borderRadius: '8px'
-                  }}
-                />
-                <Legend />
-                <Bar dataKey="collected" name="Collected" fill="hsl(173, 58%, 39%)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="expected" name="Expected" fill="hsl(222, 47%, 20%)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
-
       {/* Bottom Row */}
-      <div className="grid gap-4 sm:gap-6 lg:grid-cols-4">
-        {/* Portfolio Distribution */}
-        <div className="rounded-xl border border-border bg-card p-4 sm:p-6 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-          <h2 className="text-base sm:text-lg font-semibold mb-4">Loan Portfolio</h2>
-          <div className="h-[180px] sm:h-[200px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={portfolio}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={80}
-                  paddingAngle={2}
-                  dataKey="value"
-                >
-                  {portfolio.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  formatter={(value: number) => formatFullCurrency(value)}
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(0, 0%, 100%)',
-                    border: '1px solid hsl(215, 20%, 88%)',
-                    borderRadius: '8px'
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="mt-4 space-y-2">
-            {portfolio.map((item, index) => (
-              <div key={index} className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
-                  <div 
-                    className="h-3 w-3 rounded-full" 
-                    style={{ backgroundColor: item.color }}
-                  />
-                  <span className="text-muted-foreground">{item.name}</span>
-                </div>
-                <span className="font-medium">{formatCurrency(item.value)}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
         {/* Loan Status Distribution */}
-        <div className="rounded-xl border border-border bg-card p-4 sm:p-6 animate-slide-up" style={{ animationDelay: '0.25s' }}>
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-6 animate-slide-up">
           <h2 className="text-base sm:text-lg font-semibold mb-4">Loan Status</h2>
-          <div className="h-[180px] sm:h-[200px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={loanStatuses}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={80}
-                  paddingAngle={2}
-                  dataKey="value"
-                >
-                  {loanStatuses.map((entry, index) => (
-                    <Cell key={`status-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  formatter={(value: number) => [`${value} loans`, 'Count']}
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(0, 0%, 100%)',
-                    border: '1px solid hsl(215, 20%, 88%)',
-                    borderRadius: '8px'
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="mt-4 space-y-2">
-            {loanStatuses.map((item, index) => (
-              <div key={index} className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
-                  <div 
-                    className="h-3 w-3 rounded-full" 
-                    style={{ backgroundColor: item.color }}
-                  />
-                  <span className="text-muted-foreground">{item.name}</span>
-                </div>
-                <span className="font-medium">{item.value}</span>
+          {loanStatuses.length > 0 ? (
+            <>
+              <div className="h-[180px] sm:h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={loanStatuses}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={80}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {loanStatuses.map((entry, index) => (
+                        <Cell key={`status-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value: number) => [`${value} loans`, 'Count']}
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(0, 0%, 100%)',
+                        border: '1px solid hsl(215, 20%, 88%)',
+                        borderRadius: '8px'
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
-            ))}
-          </div>
+              <div className="mt-4 space-y-2">
+                {loanStatuses.map((item, index) => (
+                  <div key={index} className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="h-3 w-3 rounded-full" 
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <span className="text-muted-foreground">{item.name}</span>
+                    </div>
+                    <span className="font-medium">{item.value}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="text-center py-8 text-muted-foreground">No loans yet</p>
+          )}
         </div>
 
         {/* Quick Stats */}
-        <div className="lg:col-span-2 rounded-xl border border-border bg-card p-4 sm:p-6 animate-slide-up" style={{ animationDelay: '0.3s' }}>
+        <div className="lg:col-span-2 rounded-xl border border-border bg-card p-4 sm:p-6 animate-slide-up" style={{ animationDelay: '0.1s' }}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base sm:text-lg font-semibold">Pending Applications</h2>
             <Button variant="ghost" size="sm" asChild>
@@ -287,19 +172,23 @@ export default function AdminDashboard() {
             </Button>
           </div>
           <div className="space-y-2 sm:space-y-3">
-            {pendingApps.slice(0, 3).map((app) => (
+            {pendingLoans?.slice(0, 5).map((loan) => (
               <div 
-                key={app.id}
+                key={loan.id}
                 className="flex flex-col gap-2 rounded-lg border border-border p-3 sm:p-4 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="min-w-0">
-                  <p className="font-medium truncate">{app.clientName}</p>
+                  <p className="font-medium truncate">
+                    {loan.clients?.first_name} {loan.clients?.last_name}
+                  </p>
                   <p className="text-sm text-muted-foreground truncate">
-                    {app.product} · {formatFullCurrency(app.amount)}
+                    {loan.loan_products?.name} · {formatFullCurrency(Number(loan.principal_amount))}
                   </p>
                 </div>
                 <div className="flex items-center justify-between sm:flex-col sm:text-right sm:items-end gap-1">
-                  <p className="text-xs sm:text-sm text-muted-foreground">{app.appliedDate}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    {new Date(loan.applied_at).toLocaleDateString()}
+                  </p>
                   <Link 
                     to="/admin/applications" 
                     className="text-sm font-medium text-accent hover:underline"
@@ -309,12 +198,28 @@ export default function AdminDashboard() {
                 </div>
               </div>
             ))}
-            {pendingApps.length === 0 && (
+            {(!pendingLoans || pendingLoans.length === 0) && (
               <p className="text-center py-8 text-muted-foreground">
                 No pending applications
               </p>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Summary Row */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
+          <p className="text-sm text-muted-foreground">Total Clients</p>
+          <p className="text-2xl font-bold mt-1">{clients?.length || 0}</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
+          <p className="text-sm text-muted-foreground">Total Loans</p>
+          <p className="text-2xl font-bold mt-1">{stats?.totalLoansCount || 0}</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
+          <p className="text-sm text-muted-foreground">Paid Off Loans</p>
+          <p className="text-2xl font-bold mt-1 text-success">{stats?.paidLoansCount || 0}</p>
         </div>
       </div>
     </div>

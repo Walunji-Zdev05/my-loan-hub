@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, User, Phone, Mail, Check, AlertCircle, Plus, Eye } from 'lucide-react';
+import { Search, Phone, Mail, Plus, Eye, Loader2 } from 'lucide-react';
 
 import { DataTable } from '@/components/shared/DataTable';
 import { Input } from '@/components/ui/input';
@@ -11,19 +11,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { clients, loans, loanApplications, Client } from '@/lib/mockData';
-import { cn } from '@/lib/utils';
+import { useClients, Client } from '@/hooks/useClients';
 
 export default function ClientsList() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  
+  const { data: clients, isLoading } = useClients();
 
-  const filteredClients = clients.filter(client => 
-    client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    client.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    client.nationalId.includes(searchQuery)
-  );
+  const filteredClients = clients?.filter(client => {
+    const fullName = `${client.first_name} ${client.last_name}`.toLowerCase();
+    const query = searchQuery.toLowerCase();
+    return (
+      fullName.includes(query) ||
+      client.client_number.toLowerCase().includes(query) ||
+      (client.id_number?.toLowerCase().includes(query) ?? false)
+    );
+  }) || [];
 
   const formatDate = (date: string) => 
     new Date(date).toLocaleDateString('en-MW', { 
@@ -32,41 +37,15 @@ export default function ClientsList() {
       year: 'numeric' 
     });
 
-  const formatCurrency = (amount: number) => 
-    `K${amount.toLocaleString()}`;
-
-  const getClientLoans = (clientId: string) => 
-    loans.filter(l => l.clientId === clientId);
-
-  const getClientApplications = (clientId: string) =>
-    loanApplications.filter(a => a.clientId === clientId);
-
-  const FeeStatusBadge = ({ paid, label, amount, paidDate }: { paid: boolean; label: string; amount: number; paidDate?: string }) => (
-    <div className={cn(
-      'flex items-center justify-between p-2 rounded-lg text-sm',
-      paid ? 'bg-success/10' : 'bg-muted'
-    )}>
-      <div className="flex items-center gap-2">
-        {paid ? (
-          <Check className="h-4 w-4 text-success" />
-        ) : (
-          <AlertCircle className="h-4 w-4 text-muted-foreground" />
-        )}
-        <span className={paid ? 'text-success' : 'text-muted-foreground'}>{label}</span>
-      </div>
-      <div className="text-right">
-        <p className="font-medium">{formatCurrency(amount)}</p>
-        {paidDate && <p className="text-xs text-muted-foreground">Paid: {formatDate(paidDate)}</p>}
-      </div>
-    </div>
-  );
+  const formatCurrency = (amount: number | null) => 
+    amount ? `K${amount.toLocaleString()}` : 'N/A';
 
   const columns = [
     {
-      key: 'id',
+      key: 'client_number',
       header: 'Client ID',
       cell: (client: Client) => (
-        <span className="font-medium">{client.id}</span>
+        <span className="font-medium font-mono text-sm">{client.client_number}</span>
       ),
     },
     {
@@ -75,33 +54,34 @@ export default function ClientsList() {
       cell: (client: Client) => (
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-medium">
-            {client.name.charAt(0)}
+            {client.first_name.charAt(0)}
           </div>
-          {client.name}
+          {client.first_name} {client.last_name}
         </div>
       ),
     },
     {
-      key: 'nationalId',
+      key: 'id_number',
       header: 'National ID',
-      cell: (client: Client) => client.nationalId,
+      cell: (client: Client) => client.id_number || 'N/A',
+      hideOnMobile: true,
     },
     {
       key: 'phone',
       header: 'Phone',
-      cell: (client: Client) => client.phone,
+      cell: (client: Client) => client.phone || 'N/A',
+      hideOnMobile: true,
     },
     {
-      key: 'totalLoans',
-      header: 'Total Loans',
-      cell: (client: Client) => client.totalLoans,
-    },
-    {
-      key: 'activeLoans',
-      header: 'Active',
+      key: 'status',
+      header: 'Status',
       cell: (client: Client) => (
-        <span className={client.activeLoans > 0 ? 'text-accent font-medium' : 'text-muted-foreground'}>
-          {client.activeLoans}
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+          client.status === 'active' 
+            ? 'bg-success/10 text-success' 
+            : 'bg-muted text-muted-foreground'
+        }`}>
+          {client.status.charAt(0).toUpperCase() + client.status.slice(1)}
         </span>
       ),
     },
@@ -129,6 +109,14 @@ export default function ClientsList() {
       ),
     },
   ];
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -174,12 +162,14 @@ export default function ClientsList() {
               {/* Client Info */}
               <div className="flex items-center gap-4">
                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground text-xl font-semibold">
-                  {selectedClient.name.charAt(0)}
+                  {selectedClient.first_name.charAt(0)}
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold">{selectedClient.name}</h3>
+                  <h3 className="text-lg font-semibold">
+                    {selectedClient.first_name} {selectedClient.last_name}
+                  </h3>
                   <p className="text-sm text-muted-foreground">
-                    ID: {selectedClient.id} · NID: {selectedClient.nationalId}
+                    {selectedClient.client_number} · NID: {selectedClient.id_number || 'N/A'}
                   </p>
                 </div>
               </div>
@@ -188,92 +178,59 @@ export default function ClientsList() {
               <div className="grid gap-3 rounded-lg bg-muted/50 p-4">
                 <div className="flex items-center gap-3">
                   <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span>{selectedClient.email}</span>
+                  <span>{selectedClient.email || 'No email'}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span>{selectedClient.phone}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <User className="h-4 w-4 text-muted-foreground" />
-                  <span>Member since {formatDate(selectedClient.joinDate)}</span>
+                  <span>{selectedClient.phone || 'No phone'}</span>
                 </div>
               </div>
 
-              {/* Fee Status from Applications */}
-              {getClientApplications(selectedClient.id).length > 0 && (
-                <div>
-                  <h4 className="font-medium mb-3">Application Fee Status</h4>
-                  <div className="space-y-3">
-                    {getClientApplications(selectedClient.id).map(app => (
-                      <div key={app.id} className="border border-border rounded-lg p-3 space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium">{app.id} - {app.product}</span>
-                          <span className={cn(
-                            'text-xs px-2 py-0.5 rounded-full',
-                            app.status === 'pending' && 'bg-warning/10 text-warning',
-                            app.status === 'approved' && 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-                            app.status === 'rejected' && 'bg-destructive/10 text-destructive',
-                            app.status === 'disbursed' && 'bg-success/10 text-success'
-                          )}>
-                            {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
-                          </span>
-                        </div>
-                        <div className="text-sm text-muted-foreground mb-2">
-                          Amount: {formatCurrency(app.amount)} · Applied: {formatDate(app.appliedDate)}
-                        </div>
-                        <div className="grid gap-2">
-                          <FeeStatusBadge 
-                            paid={app.applicationFeePaid} 
-                            label="Application Fee" 
-                            amount={app.applicationFeeAmount}
-                            paidDate={app.applicationFeePaidDate}
-                          />
-                          <FeeStatusBadge 
-                            paid={app.approvalFeePaid} 
-                            label="Approval Fee" 
-                            amount={app.approvalFeeAmount}
-                            paidDate={app.approvalFeePaidDate}
-                          />
-                        </div>
+              {/* Employment Info */}
+              {(selectedClient.occupation || selectedClient.employer) && (
+                <div className="rounded-lg bg-muted/50 p-4 space-y-2">
+                  <h4 className="font-medium">Employment</h4>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    {selectedClient.occupation && (
+                      <div>
+                        <span className="text-muted-foreground">Occupation:</span>
+                        <p className="font-medium">{selectedClient.occupation}</p>
                       </div>
-                    ))}
+                    )}
+                    {selectedClient.employer && (
+                      <div>
+                        <span className="text-muted-foreground">Employer:</span>
+                        <p className="font-medium">{selectedClient.employer}</p>
+                      </div>
+                    )}
+                    {selectedClient.monthly_income && (
+                      <div>
+                        <span className="text-muted-foreground">Monthly Income:</span>
+                        <p className="font-medium">{formatCurrency(Number(selectedClient.monthly_income))}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
 
-              {/* Loans Summary */}
-              <div>
-                <h4 className="font-medium mb-3">Loan History</h4>
-                <div className="space-y-2">
-                  {getClientLoans(selectedClient.id).length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No loan history</p>
-                  ) : (
-                    getClientLoans(selectedClient.id).map(loan => (
-                      <div 
-                        key={loan.id}
-                        className="flex items-center justify-between rounded-lg border border-border p-3"
-                      >
-                        <div>
-                          <p className="font-medium">{loan.product}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {loan.id} · {formatDate(loan.disbursedDate)}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-medium">{formatCurrency(loan.amount)}</p>
-                          <p className={`text-sm ${
-                            loan.status === 'paid' ? 'text-success' : 
-                            loan.status === 'overdue' ? 'text-destructive' : 
-                            'text-warning'
-                          }`}>
-                            {loan.status.charAt(0).toUpperCase() + loan.status.slice(1)}
-                          </p>
-                        </div>
-                      </div>
-                    ))
-                  )}
+              {/* Address */}
+              {selectedClient.address && (
+                <div className="rounded-lg bg-muted/50 p-4 space-y-2">
+                  <h4 className="font-medium">Address</h4>
+                  <p className="text-sm">{selectedClient.address}</p>
                 </div>
+              )}
+
+              {/* Notes */}
+              {selectedClient.notes && (
+                <div className="rounded-lg bg-muted/50 p-4 space-y-2">
+                  <h4 className="font-medium">Notes</h4>
+                  <p className="text-sm">{selectedClient.notes}</p>
+                </div>
+              )}
+
+              <div className="text-sm text-muted-foreground">
+                Client since {formatDate(selectedClient.created_at)}
               </div>
             </div>
           )}
