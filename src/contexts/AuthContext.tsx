@@ -1,10 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 export type UserRole = 'borrower' | 'admin';
 
-interface AuthUser {
+interface User {
   id: string;
   name: string;
   email: string;
@@ -12,162 +10,48 @@ interface AuthUser {
 }
 
 interface AuthContextType {
-  user: AuthUser | null;
-  session: Session | null;
-  isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
-  signOut: () => Promise<void>;
+  user: User | null;
+  login: (email: string, password: string, role: UserRole) => boolean;
+  logout: () => void;
   isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Demo users
+const demoUsers: Record<UserRole, User> = {
+  borrower: {
+    id: 'C001',
+    name: 'John Mwangi',
+    email: 'john@email.com',
+    role: 'borrower',
+  },
+  admin: {
+    id: 'A001',
+    name: 'Admin User',
+    email: 'admin@loanpro.com',
+    role: 'admin',
+  },
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
 
-  useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        
-        if (session?.user) {
-          // Defer role check to avoid deadlock
-          setTimeout(() => {
-            checkUserRole(session.user.id);
-          }, 0);
-        } else {
-          setUser(null);
-          setIsLoading(false);
-        }
-      }
-    );
-
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        checkUserRole(session.user.id);
-      } else {
-        setIsLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const checkUserRole = async (userId: string) => {
-    try {
-      const { data: roleData, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .single();
-
-      if (error || !roleData || roleData.role !== 'admin') {
-        // Not an admin - sign out
-        console.log('User is not an admin');
-        await supabase.auth.signOut();
-        setUser(null);
-        setSession(null);
-        setIsLoading(false);
-        return;
-      }
-
-      // Get user details from session
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      
-      if (authUser) {
-        setUser({
-          id: authUser.id,
-          name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'Admin',
-          email: authUser.email || '',
-          role: 'admin',
-        });
-      }
-    } catch (err) {
-      console.error('Error checking user role:', err);
-    } finally {
-      setIsLoading(false);
+  const login = (email: string, password: string, role: UserRole): boolean => {
+    // Demo login - in production, this would validate against a backend
+    if (password.length >= 4) {
+      setUser(demoUsers[role]);
+      return true;
     }
+    return false;
   };
 
-  const signIn = async (email: string, password: string): Promise<{ error: Error | null }> => {
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        return { error };
-      }
-
-      return { error: null };
-    } catch (err) {
-      return { error: err as Error };
-    }
-  };
-
-  const signUp = async (email: string, password: string, name: string): Promise<{ error: Error | null }> => {
-    try {
-      const redirectUrl = `${window.location.origin}/`;
-      
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            name,
-          },
-        },
-      });
-
-      if (error) {
-        return { error };
-      }
-
-      // Create admin role for the new user
-      if (data.user) {
-        const { error: roleError } = await supabase
-          .from('user_roles')
-          .insert({
-            user_id: data.user.id,
-            role: 'admin',
-          });
-
-        if (roleError) {
-          console.error('Error creating user role:', roleError);
-          // Don't return error - user is created, role creation might fail due to RLS
-        }
-      }
-
-      return { error: null };
-    } catch (err) {
-      return { error: err as Error };
-    }
-  };
-
-  const signOut = async () => {
-    await supabase.auth.signOut();
+  const logout = () => {
     setUser(null);
-    setSession(null);
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      session,
-      isLoading,
-      signIn, 
-      signUp,
-      signOut, 
-      isAuthenticated: !!user 
-    }}>
+    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user }}>
       {children}
     </AuthContext.Provider>
   );
