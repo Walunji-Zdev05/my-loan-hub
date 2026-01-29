@@ -6,73 +6,61 @@ import { DataTable } from '@/components/shared/DataTable';
 import { StatCard } from '@/components/shared/StatCard';
 import { Calendar, DollarSign, TrendingUp, Clock, FileDown } from 'lucide-react';
 import { format, addDays, isWithinInterval, startOfToday } from 'date-fns';
-import { useLoans, LoanWithDetails } from '@/hooks/useLoans';
+
+
+// Fake future data for demo
+const generateFakeData = () => {
+  const today = startOfToday();
+  
+  const pendingDisbursements = [
+    { id: 'DIS-001', date: addDays(today, 2), clientName: 'John Kamau', amount: 50000, type: 'Disbursement', status: 'Approved' },
+    { id: 'DIS-002', date: addDays(today, 5), clientName: 'Mary Wanjiku', amount: 75000, type: 'Disbursement', status: 'Approved' },
+    { id: 'DIS-003', date: addDays(today, 7), clientName: 'Peter Ochieng', amount: 100000, type: 'Disbursement', status: 'Approved' },
+    { id: 'DIS-004', date: addDays(today, 10), clientName: 'Grace Muthoni', amount: 30000, type: 'Disbursement', status: 'Approved' },
+    { id: 'DIS-005', date: addDays(today, 15), clientName: 'James Njoroge', amount: 45000, type: 'Disbursement', status: 'Approved' },
+    { id: 'DIS-006', date: addDays(today, 20), clientName: 'Faith Akinyi', amount: 80000, type: 'Disbursement', status: 'Approved' },
+  ];
+
+  const expectedRepayments = [
+    { id: 'REP-001', date: addDays(today, 3), clientId: 'CL-001', clientName: 'Samuel Kipchoge', amount: 5500, type: 'Repayment', loanId: 'LN-1001' },
+    { id: 'REP-002', date: addDays(today, 5), clientId: 'CL-002', clientName: 'Alice Wambui', amount: 8200, type: 'Repayment', loanId: 'LN-1002' },
+    { id: 'REP-003', date: addDays(today, 8), clientId: 'CL-003', clientName: 'Daniel Mwangi', amount: 12000, type: 'Repayment', loanId: 'LN-1003' },
+    { id: 'REP-004', date: addDays(today, 12), clientId: 'CL-004', clientName: 'Rose Atieno', amount: 6800, type: 'Repayment', loanId: 'LN-1004' },
+    { id: 'REP-005', date: addDays(today, 15), clientId: 'CL-005', clientName: 'Michael Otieno', amount: 15000, type: 'Repayment', loanId: 'LN-1005' },
+    { id: 'REP-006', date: addDays(today, 18), clientId: 'CL-006', clientName: 'Elizabeth Njeri', amount: 9500, type: 'Repayment', loanId: 'LN-1006' },
+    { id: 'REP-007', date: addDays(today, 22), clientId: 'CL-007', clientName: 'Joseph Kariuki', amount: 7200, type: 'Repayment', loanId: 'LN-1007' },
+    { id: 'REP-008', date: addDays(today, 25), clientId: 'CL-008', clientName: 'Catherine Nyambura', amount: 11000, type: 'Repayment', loanId: 'LN-1008' },
+    { id: 'REP-009', date: addDays(today, 30), clientId: 'CL-009', clientName: 'Robert Wekesa', amount: 4500, type: 'Repayment', loanId: 'LN-1009' },
+    { id: 'REP-010', date: addDays(today, 35), clientId: 'CL-010', clientName: 'Anne Chebet', amount: 13500, type: 'Repayment', loanId: 'LN-1010' },
+    { id: 'REP-011', date: addDays(today, 42), clientId: 'CL-011', clientName: 'Paul Mutua', amount: 8800, type: 'Repayment', loanId: 'LN-1011' },
+    { id: 'REP-012', date: addDays(today, 55), clientId: 'CL-012', clientName: 'Jane Wangari', amount: 10200, type: 'Repayment', loanId: 'LN-1012' },
+  ];
+
+  const projectedIncome = [
+    { id: 'INC-001', date: addDays(today, 3), clientName: 'Samuel Kipchoge', amount: 825, type: 'Interest', loanId: 'LN-1001' },
+    { id: 'INC-002', date: addDays(today, 5), clientName: 'Alice Wambui', amount: 1230, type: 'Interest', loanId: 'LN-1002' },
+    { id: 'INC-003', date: addDays(today, 5), clientName: 'Mary Wanjiku', amount: 1500, type: 'Application Fee', loanId: 'LN-NEW' },
+    { id: 'INC-004', date: addDays(today, 7), clientName: 'Peter Ochieng', amount: 2000, type: 'Application Fee', loanId: 'LN-NEW' },
+    { id: 'INC-005', date: addDays(today, 8), clientName: 'Daniel Mwangi', amount: 1800, type: 'Interest', loanId: 'LN-1003' },
+    { id: 'INC-006', date: addDays(today, 12), clientName: 'Rose Atieno', amount: 1020, type: 'Interest', loanId: 'LN-1004' },
+    { id: 'INC-007', date: addDays(today, 15), clientName: 'Michael Otieno', amount: 2250, type: 'Interest', loanId: 'LN-1005' },
+    { id: 'INC-008', date: addDays(today, 18), clientName: 'Elizabeth Njeri', amount: 1425, type: 'Interest', loanId: 'LN-1006' },
+    { id: 'INC-009', date: addDays(today, 20), clientName: 'Faith Akinyi', amount: 1600, type: 'Approval Fee', loanId: 'LN-NEW' },
+    { id: 'INC-010', date: addDays(today, 25), clientName: 'Catherine Nyambura', amount: 1650, type: 'Interest', loanId: 'LN-1008' },
+    { id: 'INC-011', date: addDays(today, 35), clientName: 'Anne Chebet', amount: 2025, type: 'Interest', loanId: 'LN-1010' },
+    { id: 'INC-012', date: addDays(today, 45), clientName: 'Paul Mutua', amount: 1320, type: 'Interest', loanId: 'LN-1011' },
+  ];
+
+  return { pendingDisbursements, expectedRepayments, projectedIncome };
+};
+
+const { pendingDisbursements, expectedRepayments, projectedIncome } = generateFakeData();
 
 type DateFilter = '7' | '30' | '60' | 'all';
 
 function ExpectedLoans() {
   const [dateFilter, setDateFilter] = useState<DateFilter>('30');
   const today = startOfToday();
-
-  // Get approved loans (pending disbursement)
-  const { data: approvedLoans = [], isLoading: approvedLoading } = useLoans('approved');
-  // Get active loans (for expected repayments)
-  const { data: activeLoans = [], isLoading: activeLoading } = useLoans(['active', 'disbursed']);
-
-  const isLoading = approvedLoading || activeLoading;
-
-  // Generate expected repayments from active loans
-  const expectedRepayments = useMemo(() => {
-    return activeLoans.map(loan => ({
-      id: loan.id,
-      date: loan.next_payment_date ? new Date(loan.next_payment_date) : addDays(today, 30),
-      clientId: loan.clients.client_number,
-      clientName: `${loan.clients.first_name} ${loan.clients.last_name}`,
-      amount: Number(loan.monthly_payment),
-      type: 'Repayment' as const,
-      loanId: loan.loan_number,
-    }));
-  }, [activeLoans, today]);
-
-  // Generate projected income (interest + fees from new disbursements)
-  const projectedIncome = useMemo(() => {
-    const income: Array<{
-      id: string;
-      date: Date;
-      clientName: string;
-      amount: number;
-      type: string;
-      loanId: string;
-    }> = [];
-
-    // Interest from repayments (simplified - assume 30% of payment is interest)
-    activeLoans.forEach(loan => {
-      if (loan.next_payment_date) {
-        income.push({
-          id: `${loan.id}-interest`,
-          date: new Date(loan.next_payment_date),
-          clientName: `${loan.clients.first_name} ${loan.clients.last_name}`,
-          amount: Math.round(Number(loan.monthly_payment) * 0.3),
-          type: 'Interest',
-          loanId: loan.loan_number,
-        });
-      }
-    });
-
-    // Approval fees from approved loans
-    approvedLoans.forEach(loan => {
-      income.push({
-        id: `${loan.id}-approval`,
-        date: addDays(today, 5),
-        clientName: `${loan.clients.first_name} ${loan.clients.last_name}`,
-        amount: Number(loan.loan_products.approval_fee),
-        type: 'Approval Fee',
-        loanId: loan.loan_number,
-      });
-    });
-
-    return income;
-  }, [activeLoans, approvedLoans, today]);
 
   const filterByDate = <T extends { date: Date }>(items: T[]): T[] => {
     if (dateFilter === 'all') return items;
@@ -83,18 +71,9 @@ function ExpectedLoans() {
     );
   };
 
-  const pendingDisbursements = approvedLoans.map(loan => ({
-    id: loan.id,
-    date: addDays(today, 3),
-    clientName: `${loan.clients.first_name} ${loan.clients.last_name}`,
-    amount: Number(loan.principal_amount),
-    type: 'Disbursement' as const,
-    status: 'Approved',
-  }));
-
-  const filteredDisbursements = useMemo(() => filterByDate(pendingDisbursements), [pendingDisbursements, dateFilter]);
-  const filteredRepayments = useMemo(() => filterByDate(expectedRepayments), [expectedRepayments, dateFilter]);
-  const filteredIncome = useMemo(() => filterByDate(projectedIncome), [projectedIncome, dateFilter]);
+  const filteredDisbursements = useMemo(() => filterByDate(pendingDisbursements), [dateFilter]);
+  const filteredRepayments = useMemo(() => filterByDate(expectedRepayments), [dateFilter]);
+  const filteredIncome = useMemo(() => filterByDate(projectedIncome), [dateFilter]);
 
   const totalDisbursements = filteredDisbursements.reduce((sum, d) => sum + d.amount, 0);
   const totalRepayments = filteredRepayments.reduce((sum, r) => sum + r.amount, 0);
@@ -132,18 +111,30 @@ function ExpectedLoans() {
     { key: 'date', header: 'Date', cell: (item: typeof pendingDisbursements[0]) => format(item.date, 'MMM dd, yyyy') },
     { key: 'client', header: 'Client', cell: (item: typeof pendingDisbursements[0]) => item.clientName },
     { key: 'amount', header: 'Amount', cell: (item: typeof pendingDisbursements[0]) => formatCurrency(item.amount) },
-    { key: 'status', header: 'Status', cell: () => (
+    { key: 'type', header: 'Type', cell: (item: typeof pendingDisbursements[0]) => (
+      <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+        {item.type}
+      </span>
+    )},
+    { key: 'status', header: 'Status', cell: (item: typeof pendingDisbursements[0]) => (
       <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-        Approved
+        {item.status}
       </span>
     )},
   ];
 
   const repaymentColumns = [
     { key: 'date', header: 'Due Date', cell: (item: typeof expectedRepayments[0]) => format(item.date, 'MMM dd, yyyy') },
-    { key: 'clientId', header: 'Client ID', cell: (item: typeof expectedRepayments[0]) => <span className="font-mono text-xs text-muted-foreground">{item.clientId}</span> },
+    { key: 'clientId', header: 'Client ID', cell: (item: typeof expectedRepayments[0]) => (
+      <span className="font-mono text-xs text-muted-foreground">{item.clientId}</span>
+    )},
     { key: 'client', header: 'Client Name', cell: (item: typeof expectedRepayments[0]) => item.clientName },
     { key: 'amount', header: 'Amount', cell: (item: typeof expectedRepayments[0]) => formatCurrency(item.amount) },
+    { key: 'type', header: 'Type', cell: (item: typeof expectedRepayments[0]) => (
+      <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
+        {item.type}
+      </span>
+    )},
     { key: 'loanId', header: 'Loan ID', cell: (item: typeof expectedRepayments[0]) => item.loanId },
   ];
 
@@ -162,14 +153,6 @@ function ExpectedLoans() {
     )},
     { key: 'loanId', header: 'Loan ID', cell: (item: typeof projectedIncome[0]) => item.loanId },
   ];
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -199,9 +182,27 @@ function ExpectedLoans() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-3">
-        <StatCard title="Expected Disbursements" value={formatCurrency(totalDisbursements)} subtitle={`${filteredDisbursements.length} pending`} icon={<DollarSign className="h-5 w-5" />} variant="primary" />
-        <StatCard title="Expected Repayments" value={formatCurrency(totalRepayments)} subtitle={`${filteredRepayments.length} upcoming`} icon={<Clock className="h-5 w-5" />} variant="accent" />
-        <StatCard title="Projected Income" value={formatCurrency(totalIncome)} subtitle={`Interest + fees`} icon={<TrendingUp className="h-5 w-5" />} variant="default" />
+        <StatCard
+          title="Expected Disbursements"
+          value={formatCurrency(totalDisbursements)}
+          subtitle={`${filteredDisbursements.length} pending disbursements`}
+          icon={<DollarSign className="h-5 w-5" />}
+          variant="primary"
+        />
+        <StatCard
+          title="Expected Repayments"
+          value={formatCurrency(totalRepayments)}
+          subtitle={`${filteredRepayments.length} upcoming payments`}
+          icon={<Clock className="h-5 w-5" />}
+          variant="accent"
+        />
+        <StatCard
+          title="Projected Income"
+          value={formatCurrency(totalIncome)}
+          subtitle={`Interest + fees from ${filteredIncome.length} items`}
+          icon={<TrendingUp className="h-5 w-5" />}
+          variant="default"
+        />
       </div>
 
       {/* Pending Disbursements Table */}
@@ -213,7 +214,11 @@ function ExpectedLoans() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0 sm:p-6 sm:pt-0">
-          <DataTable columns={disbursementColumns} data={filteredDisbursements} emptyMessage="No pending disbursements" />
+          <DataTable
+            columns={disbursementColumns}
+            data={filteredDisbursements}
+            emptyMessage="No pending disbursements in selected period"
+          />
         </CardContent>
       </Card>
 
@@ -226,7 +231,11 @@ function ExpectedLoans() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0 sm:p-6 sm:pt-0">
-          <DataTable columns={repaymentColumns} data={filteredRepayments} emptyMessage="No expected repayments" />
+          <DataTable
+            columns={repaymentColumns}
+            data={filteredRepayments}
+            emptyMessage="No expected repayments in selected period"
+          />
         </CardContent>
       </Card>
 
@@ -235,11 +244,15 @@ function ExpectedLoans() {
         <CardHeader className="p-4 sm:p-6">
           <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
             <TrendingUp className="h-5 w-5 text-amber-500" />
-            Projected Income
+            Projected Income (Interest + Fees)
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0 sm:p-6 sm:pt-0">
-          <DataTable columns={incomeColumns} data={filteredIncome} emptyMessage="No projected income" />
+          <DataTable
+            columns={incomeColumns}
+            data={filteredIncome}
+            emptyMessage="No projected income in selected period"
+          />
         </CardContent>
       </Card>
     </div>

@@ -70,7 +70,7 @@ export default function BorrowerDashboard() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold lg:text-3xl">
-              Welcome back{user?.email ? `, ${user.email.split('@')[0]}` : ''}
+              Welcome back, {user?.name?.split(' ')[0]}
             </h1>
             <p className="mt-1 text-muted-foreground">
               Here's an overview of your loan status

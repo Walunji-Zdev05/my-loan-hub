@@ -7,27 +7,23 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
-import { useCreateClient } from '@/hooks/useClients';
 
 interface ClientFormData {
-  first_name: string;
-  last_name: string;
-  id_number: string;
+  name: string;
+  nationalId: string;
   phone: string;
   email: string;
 }
 
 export default function CreateClient() {
   const navigate = useNavigate();
-  const createClient = useCreateClient();
-  
   const [formData, setFormData] = useState<ClientFormData>({
-    first_name: '',
-    last_name: '',
-    id_number: '',
+    name: '',
+    nationalId: '',
     phone: '',
     email: '',
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleInputChange = (field: keyof ClientFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -36,38 +32,26 @@ export default function CreateClient() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.first_name || !formData.last_name) {
+    if (!formData.name || !formData.nationalId || !formData.phone || !formData.email) {
       toast({
         title: 'Validation Error',
-        description: 'Please fill in required fields',
+        description: 'Please fill in all required fields',
         variant: 'destructive',
       });
       return;
     }
 
-    try {
-      await createClient.mutateAsync({
-        first_name: formData.first_name,
-        last_name: formData.last_name,
-        id_number: formData.id_number || null,
-        phone: formData.phone || null,
-        email: formData.email || null,
-        status: 'active',
-      });
-      
-      toast({
-        title: 'Client Created',
-        description: `${formData.first_name} ${formData.last_name} has been registered successfully`,
-      });
-      
-      navigate('/admin/clients');
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to create client',
-        variant: 'destructive',
-      });
-    }
+    setIsSubmitting(true);
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    toast({
+      title: 'Client Created',
+      description: `${formData.name} has been registered successfully`,
+    });
+    
+    navigate('/admin/clients');
   };
 
   return (
@@ -93,82 +77,68 @@ export default function CreateClient() {
         </CardHeader>
         <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4">
               <div className="space-y-2">
-                <Label htmlFor="first_name">First Name *</Label>
+                <Label htmlFor="name">Full Name *</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    id="first_name"
-                    placeholder="Enter first name"
-                    value={formData.first_name}
-                    onChange={(e) => handleInputChange('first_name', e.target.value)}
+                    id="name"
+                    placeholder="Enter full name"
+                    value={formData.name}
+                    onChange={(e) => handleInputChange('name', e.target.value)}
                     className="pl-10 h-11 sm:h-10"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="last_name">Last Name *</Label>
+                <Label htmlFor="nationalId">National ID *</Label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <CreditCard className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    id="last_name"
-                    placeholder="Enter last name"
-                    value={formData.last_name}
-                    onChange={(e) => handleInputChange('last_name', e.target.value)}
+                    id="nationalId"
+                    placeholder="Enter national ID"
+                    value={formData.nationalId}
+                    onChange={(e) => handleInputChange('nationalId', e.target.value)}
                     className="pl-10 h-11 sm:h-10"
                   />
                 </div>
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="id_number">National ID</Label>
-              <div className="relative">
-                <CreditCard className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  id="id_number"
-                  placeholder="Enter national ID"
-                  value={formData.id_number}
-                  onChange={(e) => handleInputChange('id_number', e.target.value)}
-                  className="pl-10 h-11 sm:h-10"
-                />
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number *</Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="phone"
+                    placeholder="+265..."
+                    value={formData.phone}
+                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    className="pl-10 h-11 sm:h-10"
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  id="phone"
-                  placeholder="+265..."
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  className="pl-10 h-11 sm:h-10"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="email@example.com"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="pl-10 h-11 sm:h-10"
-                />
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address *</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="email@example.com"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    className="pl-10 h-11 sm:h-10"
+                  />
+                </div>
               </div>
             </div>
 
             <div className="flex flex-col gap-3 pt-4 sm:flex-row">
-              <Button type="submit" disabled={createClient.isPending} className="h-11 sm:h-10 w-full sm:w-auto">
-                {createClient.isPending ? 'Creating...' : 'Create Client'}
+              <Button type="submit" disabled={isSubmitting} className="h-11 sm:h-10 w-full sm:w-auto">
+                {isSubmitting ? 'Creating...' : 'Create Client'}
               </Button>
               <Button type="button" variant="outline" onClick={() => navigate('/admin/clients')} className="h-11 sm:h-10 w-full sm:w-auto">
                 Cancel

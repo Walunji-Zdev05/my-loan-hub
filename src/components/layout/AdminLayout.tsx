@@ -1,72 +1,187 @@
-import { useEffect } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { Navigate, Outlet } from 'react-router-dom';
 import { AppSidebar } from './AppSidebar';
 import { useAuth } from '@/contexts/AuthContext';
+import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { LogOut, User } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { LogOut, User, Settings, Bell, AlertCircle, UserCheck, CreditCard, Clock } from 'lucide-react';
+
+const notifications = [
+  {
+    id: 1,
+    type: 'alert',
+    icon: AlertCircle,
+    title: 'Overdue Payment',
+    description: 'John Doe missed payment of K5,000',
+    time: '5 min ago',
+    unread: true,
+  },
+  {
+    id: 2,
+    type: 'approval',
+    icon: UserCheck,
+    title: 'New Client Pending',
+    description: 'Jane Smith awaiting approval',
+    time: '1 hour ago',
+    unread: true,
+  },
+  {
+    id: 3,
+    type: 'payment',
+    icon: CreditCard,
+    title: 'Payment Received',
+    description: 'K12,500 from Mary Johnson',
+    time: '2 hours ago',
+    unread: false,
+  },
+  {
+    id: 4,
+    type: 'pending',
+    icon: Clock,
+    title: 'Loan Application',
+    description: '3 applications need review',
+    time: '3 hours ago',
+    unread: true,
+  },
+];
 
 export function AdminLayout() {
-  const { user, isAuthenticated, loading, signOut } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      navigate('/login');
-    }
-  }, [loading, isAuthenticated, navigate]);
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/login');
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
+  const { user, isAuthenticated, logout } = useAuth();
+  const unreadCount = notifications.filter(n => n.unread).length;
 
   if (!isAuthenticated) {
-    return null;
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user?.role !== 'admin') {
+    return <Navigate to={`/${user?.role}`} replace />;
   }
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
+    <SidebarProvider defaultOpen={true}>
+      <div className="flex min-h-screen w-full">
         <AppSidebar />
-        <main className="flex-1 overflow-auto">
-          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 py-3">
-            <SidebarTrigger />
+        <SidebarInset>
+          {/* Header Bar */}
+          <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 lg:px-6">
+            <SidebarTrigger className="-ml-1" />
+            <div className="flex-1" />
+            
+            {/* Notifications Bell */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-2">
-                  <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center">
-                    <User className="h-4 w-4 text-primary" />
-                  </div>
-                  <span className="hidden sm:inline text-sm truncate max-w-[150px]">{user?.email}</span>
+                <Button variant="ghost" size="icon" className="relative">
+                  <Bell className="h-5 w-5" />
+                  {unreadCount > 0 && (
+                    <Badge 
+                      className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                      variant="destructive"
+                    >
+                      {unreadCount}
+                    </Badge>
+                  )}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Sign out
+              <DropdownMenuContent align="end" className="w-80 bg-popover">
+                <DropdownMenuLabel className="flex items-center justify-between">
+                  <span>Notifications</span>
+                  {unreadCount > 0 && (
+                    <Badge variant="secondary" className="text-xs">
+                      {unreadCount} new
+                    </Badge>
+                  )}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <div className="max-h-80 overflow-y-auto">
+                  {notifications.map((notification) => (
+                    <DropdownMenuItem
+                      key={notification.id}
+                      className={`flex items-start gap-3 p-3 cursor-pointer ${
+                        notification.unread ? 'bg-muted/50' : ''
+                      }`}
+                    >
+                      <div className={`mt-0.5 rounded-full p-2 ${
+                        notification.type === 'alert' ? 'bg-destructive/10 text-destructive' :
+                        notification.type === 'approval' ? 'bg-warning/10 text-warning' :
+                        notification.type === 'payment' ? 'bg-success/10 text-success' :
+                        'bg-primary/10 text-primary'
+                      }`}>
+                        <notification.icon className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium leading-none">
+                            {notification.title}
+                          </p>
+                          {notification.unread && (
+                            <span className="h-2 w-2 rounded-full bg-primary" />
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {notification.description}
+                        </p>
+                        <p className="text-xs text-muted-foreground/70">
+                          {notification.time}
+                        </p>
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="justify-center text-primary cursor-pointer">
+                  View all notifications
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
-          <div className="p-4 sm:p-6 lg:p-8">
+
+            {/* User Profile */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-2 px-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                      {user?.name?.charAt(0) || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="hidden flex-col items-start text-left md:flex">
+                    <span className="text-sm font-medium">{user?.name}</span>
+                    <span className="text-xs text-muted-foreground capitalize">{user?.role}</span>
+                  </div>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 bg-popover">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <User className="mr-2 h-4 w-4" />
+                  Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Settings className="mr-2 h-4 w-4" />
+                  Settings
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout} className="text-destructive">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </header>
+          {/* Page Content */}
+          <main className="flex-1 p-6 lg:p-8">
             <Outlet />
-          </div>
-        </main>
+          </main>
+        </SidebarInset>
       </div>
     </SidebarProvider>
   );
