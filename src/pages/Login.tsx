@@ -1,41 +1,72 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Wallet, Users, Shield } from 'lucide-react';
+import { Wallet, Users, Shield, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAuth, UserRole } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { AppRole } from '@/hooks/useSupabaseAuth';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [selectedRole, setSelectedRole] = useState<UserRole>('borrower');
+  const [selectedRole, setSelectedRole] = useState<AppRole>('borrower');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const [isSignUp, setIsSignUp] = useState(false);
+  const { signIn, signUp, isAuthenticated, role } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && role) {
+      navigate(`/${role}`);
+    }
+  }, [isAuthenticated, role, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    const success = login(email, password, selectedRole);
-    
-    if (success) {
+    try {
+      if (isSignUp) {
+        const { error } = await signUp(email, password, selectedRole);
+        
+        if (error) {
+          toast({
+            title: 'Sign up failed',
+            description: error.message || 'Please try again',
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Account created!',
+            description: 'You can now sign in',
+          });
+          setIsSignUp(false);
+        }
+      } else {
+        const { error } = await signIn(email, password);
+        
+        if (error) {
+          toast({
+            title: 'Login failed',
+            description: error.message || 'Invalid email or password',
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Welcome back!',
+            description: 'Signed in successfully',
+          });
+        }
+      }
+    } catch (err) {
       toast({
-        title: 'Welcome back!',
-        description: `Signed in as ${selectedRole}`,
-      });
-      navigate(`/${selectedRole}`);
-    } else {
-      toast({
-        title: 'Login failed',
-        description: 'Please check your credentials',
+        title: 'Error',
+        description: 'An unexpected error occurred',
         variant: 'destructive',
       });
     }
@@ -94,57 +125,61 @@ export default function Login() {
           </div>
 
           <div className="text-center lg:text-left">
-            <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>
+            <h2 className="text-2xl font-bold tracking-tight">
+              {isSignUp ? 'Create an account' : 'Welcome back'}
+            </h2>
             <p className="mt-2 text-muted-foreground">
-              Sign in to access your dashboard
+              {isSignUp ? 'Sign up to get started' : 'Sign in to access your dashboard'}
             </p>
           </div>
 
-          {/* Role selector */}
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => setSelectedRole('borrower')}
-              className={cn(
-                'flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all',
-                selectedRole === 'borrower'
-                  ? 'border-accent bg-accent/5'
-                  : 'border-border hover:border-accent/50'
-              )}
-            >
-              <Users className={cn(
-                'h-6 w-6',
-                selectedRole === 'borrower' ? 'text-accent' : 'text-muted-foreground'
-              )} />
-              <span className={cn(
-                'text-sm font-medium',
-                selectedRole === 'borrower' ? 'text-accent' : 'text-muted-foreground'
-              )}>
-                Borrower
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedRole('admin')}
-              className={cn(
-                'flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all',
-                selectedRole === 'admin'
-                  ? 'border-accent bg-accent/5'
-                  : 'border-border hover:border-accent/50'
-              )}
-            >
-              <Shield className={cn(
-                'h-6 w-6',
-                selectedRole === 'admin' ? 'text-accent' : 'text-muted-foreground'
-              )} />
-              <span className={cn(
-                'text-sm font-medium',
-                selectedRole === 'admin' ? 'text-accent' : 'text-muted-foreground'
-              )}>
-                Admin
-              </span>
-            </button>
-          </div>
+          {/* Role selector (only for signup) */}
+          {isSignUp && (
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setSelectedRole('borrower')}
+                className={cn(
+                  'flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all',
+                  selectedRole === 'borrower'
+                    ? 'border-accent bg-accent/5'
+                    : 'border-border hover:border-accent/50'
+                )}
+              >
+                <Users className={cn(
+                  'h-6 w-6',
+                  selectedRole === 'borrower' ? 'text-accent' : 'text-muted-foreground'
+                )} />
+                <span className={cn(
+                  'text-sm font-medium',
+                  selectedRole === 'borrower' ? 'text-accent' : 'text-muted-foreground'
+                )}>
+                  Borrower
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedRole('admin')}
+                className={cn(
+                  'flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all',
+                  selectedRole === 'admin'
+                    ? 'border-accent bg-accent/5'
+                    : 'border-border hover:border-accent/50'
+                )}
+              >
+                <Shield className={cn(
+                  'h-6 w-6',
+                  selectedRole === 'admin' ? 'text-accent' : 'text-muted-foreground'
+                )} />
+                <span className={cn(
+                  'text-sm font-medium',
+                  selectedRole === 'admin' ? 'text-accent' : 'text-muted-foreground'
+                )}>
+                  Admin
+                </span>
+              </button>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
@@ -169,6 +204,7 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                minLength={6}
                 className="h-11"
               />
             </div>
@@ -180,13 +216,23 @@ export default function Login() {
               className="w-full"
               disabled={isLoading}
             >
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {isLoading ? (isSignUp ? 'Creating account...' : 'Signing in...') : (isSignUp ? 'Create Account' : 'Sign In')}
             </Button>
           </form>
 
-          <p className="text-center text-sm text-muted-foreground">
-            Demo: Use any email and password (4+ chars)
-          </p>
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => setIsSignUp(!isSignUp)}
+              className="text-sm text-muted-foreground hover:text-accent transition-colors"
+            >
+              {isSignUp ? (
+                <>Already have an account? <span className="font-medium text-accent">Sign in</span></>
+              ) : (
+                <>Don't have an account? <span className="font-medium text-accent">Sign up</span></>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>
