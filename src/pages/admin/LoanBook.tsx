@@ -4,8 +4,37 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DataTable } from '@/components/shared/DataTable';
-import { Download, BookOpenCheck, Search, X, Loader2 } from 'lucide-react';
-import { useLoans, LoanWithClient } from '@/hooks/useLoans';
+import { Download, BookOpenCheck, Search, X } from 'lucide-react';
+
+interface LoanBookEntry {
+  id: string;
+  clientId: string;
+  clientName: string;
+  loanId: string;
+  loanAmount: number;
+  interestAmount: number;
+  repaymentTerm: number;
+  totalExpected: number;
+  installmentAmount: number;
+  frequency: string;
+  outstandingBalance: number;
+  outstandingPrincipal: number;
+  outstandingInterest: number;
+  arrearsAmount: number;
+}
+
+const mockLoanBookData: LoanBookEntry[] = [
+  { id: '1', clientId: 'CL-001', clientName: 'John Banda', loanId: 'LN-001', loanAmount: 500000, interestAmount: 75000, repaymentTerm: 12, totalExpected: 575000, installmentAmount: 47917, frequency: 'Monthly', outstandingBalance: 287500, outstandingPrincipal: 250000, outstandingInterest: 37500, arrearsAmount: 0 },
+  { id: '2', clientId: 'CL-002', clientName: 'Mary Phiri', loanId: 'LN-002', loanAmount: 250000, interestAmount: 37500, repaymentTerm: 6, totalExpected: 287500, installmentAmount: 47917, frequency: 'Monthly', outstandingBalance: 143750, outstandingPrincipal: 125000, outstandingInterest: 18750, arrearsAmount: 15000 },
+  { id: '3', clientId: 'CL-003', clientName: 'Peter Mwale', loanId: 'LN-003', loanAmount: 1000000, interestAmount: 150000, repaymentTerm: 24, totalExpected: 1150000, installmentAmount: 47917, frequency: 'Monthly', outstandingBalance: 862500, outstandingPrincipal: 750000, outstandingInterest: 112500, arrearsAmount: 0 },
+  { id: '4', clientId: 'CL-004', clientName: 'Grace Tembo', loanId: 'LN-004', loanAmount: 150000, interestAmount: 22500, repaymentTerm: 3, totalExpected: 172500, installmentAmount: 57500, frequency: 'Monthly', outstandingBalance: 57500, outstandingPrincipal: 50000, outstandingInterest: 7500, arrearsAmount: 28750 },
+  { id: '5', clientId: 'CL-005', clientName: 'David Chirwa', loanId: 'LN-005', loanAmount: 750000, interestAmount: 112500, repaymentTerm: 18, totalExpected: 862500, installmentAmount: 47917, frequency: 'Monthly', outstandingBalance: 575000, outstandingPrincipal: 500000, outstandingInterest: 75000, arrearsAmount: 0 },
+  { id: '6', clientId: 'CL-006', clientName: 'Sarah Kamanga', loanId: 'LN-006', loanAmount: 300000, interestAmount: 45000, repaymentTerm: 12, totalExpected: 345000, installmentAmount: 28750, frequency: 'Monthly', outstandingBalance: 172500, outstandingPrincipal: 150000, outstandingInterest: 22500, arrearsAmount: 8625 },
+  { id: '7', clientId: 'CL-007', clientName: 'James Nyirenda', loanId: 'LN-007', loanAmount: 450000, interestAmount: 67500, repaymentTerm: 9, totalExpected: 517500, installmentAmount: 57500, frequency: 'Monthly', outstandingBalance: 345000, outstandingPrincipal: 300000, outstandingInterest: 45000, arrearsAmount: 0 },
+  { id: '8', clientId: 'CL-008', clientName: 'Ruth Mbewe', loanId: 'LN-008', loanAmount: 200000, interestAmount: 30000, repaymentTerm: 6, totalExpected: 230000, installmentAmount: 38333, frequency: 'Monthly', outstandingBalance: 115000, outstandingPrincipal: 100000, outstandingInterest: 15000, arrearsAmount: 19167 },
+  { id: '9', clientId: 'CL-009', clientName: 'Moses Zulu', loanId: 'LN-009', loanAmount: 600000, interestAmount: 90000, repaymentTerm: 12, totalExpected: 690000, installmentAmount: 57500, frequency: 'Monthly', outstandingBalance: 460000, outstandingPrincipal: 400000, outstandingInterest: 60000, arrearsAmount: 0 },
+  { id: '10', clientId: 'CL-010', clientName: 'Agnes Kondowe', loanId: 'LN-010', loanAmount: 350000, interestAmount: 52500, repaymentTerm: 8, totalExpected: 402500, installmentAmount: 50313, frequency: 'Monthly', outstandingBalance: 201250, outstandingPrincipal: 175000, outstandingInterest: 26250, arrearsAmount: 12578 },
+];
 
 const formatCurrency = (amount: number) => {
   return `K${amount.toLocaleString()}`;
@@ -15,28 +44,24 @@ export default function LoanBook() {
   const [searchQuery, setSearchQuery] = useState('');
   const [arrearsFilter, setArrearsFilter] = useState<string>('all');
 
-  const { data: loans, isLoading } = useLoans(['active', 'overdue', 'disbursed']);
-
   const filteredData = useMemo(() => {
-    return (loans || []).filter(loan => {
+    return mockLoanBookData.filter(entry => {
       // Search filter
       const searchLower = searchQuery.toLowerCase();
-      const clientName = `${loan.clients?.first_name || ''} ${loan.clients?.last_name || ''}`.toLowerCase();
       const matchesSearch = searchQuery === '' || 
-        clientName.includes(searchLower) ||
-        loan.clients?.client_number.toLowerCase().includes(searchLower) ||
-        loan.loan_number.toLowerCase().includes(searchLower);
+        entry.clientName.toLowerCase().includes(searchLower) ||
+        entry.clientId.toLowerCase().includes(searchLower) ||
+        entry.loanId.toLowerCase().includes(searchLower);
 
-      // Arrears filter (overdue status indicates arrears)
-      const hasArrears = loan.status === 'overdue';
+      // Arrears filter
       const matchesArrears = 
         arrearsFilter === 'all' ||
-        (arrearsFilter === 'with-arrears' && hasArrears) ||
-        (arrearsFilter === 'no-arrears' && !hasArrears);
+        (arrearsFilter === 'with-arrears' && entry.arrearsAmount > 0) ||
+        (arrearsFilter === 'no-arrears' && entry.arrearsAmount === 0);
 
       return matchesSearch && matchesArrears;
     });
-  }, [loans, searchQuery, arrearsFilter]);
+  }, [searchQuery, arrearsFilter]);
 
   const clearFilters = () => {
     setSearchQuery('');
@@ -50,20 +75,23 @@ export default function LoanBook() {
     const formattedDate = currentDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-');
     const filename = `Loan Book as of ${formattedDate}.csv`;
 
-    const headers = ['Client ID', 'Client Name', 'Loan ID', 'Loan Amount', 'Interest Rate', 'Term (Months)', 'Total Amount', 'Monthly Payment', 'Outstanding Balance', 'Status'];
+    const headers = ['Client ID', 'Client Name', 'Loan ID', 'Loan Amount', 'Interest Amount', 'Repayment Term', 'Total Expected', 'Installment Amount', 'Frequency', 'Outstanding Balance', 'Outstanding Principal', 'Outstanding Interest', 'Arrears Amount'];
     const csvContent = [
       headers.join(','),
-      ...filteredData.map(loan => [
-        loan.clients?.client_number || '',
-        `"${loan.clients?.first_name || ''} ${loan.clients?.last_name || ''}"`,
-        loan.loan_number,
-        loan.principal_amount,
-        loan.interest_rate,
-        loan.term_months,
-        loan.total_amount,
-        loan.monthly_payment,
-        loan.outstanding_balance,
-        loan.status
+      ...filteredData.map(entry => [
+        entry.clientId,
+        `"${entry.clientName}"`,
+        entry.loanId,
+        entry.loanAmount,
+        entry.interestAmount,
+        entry.repaymentTerm,
+        entry.totalExpected,
+        entry.installmentAmount,
+        entry.frequency,
+        entry.outstandingBalance,
+        entry.outstandingPrincipal,
+        entry.outstandingInterest,
+        entry.arrearsAmount
       ].join(','))
     ].join('\n');
 
@@ -76,86 +104,28 @@ export default function LoanBook() {
   };
 
   const columns = [
-    { 
-      key: 'clientId', 
-      header: 'Client ID', 
-      cell: (loan: LoanWithClient) => (
-        <span className="font-mono text-xs text-muted-foreground">{loan.clients?.client_number || '-'}</span>
-      )
-    },
-    { 
-      key: 'clientName', 
-      header: 'Client Name', 
-      cell: (loan: LoanWithClient) => (
-        <span className="font-medium">{loan.clients?.first_name} {loan.clients?.last_name}</span>
-      )
-    },
-    { 
-      key: 'loanId', 
-      header: 'Loan ID', 
-      cell: (loan: LoanWithClient) => (
-        <span className="text-muted-foreground">{loan.loan_number}</span>
-      )
-    },
-    { 
-      key: 'loanAmount', 
-      header: 'Loan Amount', 
-      cell: (loan: LoanWithClient) => formatCurrency(Number(loan.principal_amount))
-    },
-    { 
-      key: 'interestRate', 
-      header: 'Interest Rate', 
-      cell: (loan: LoanWithClient) => `${loan.interest_rate}%`
-    },
-    { 
-      key: 'termMonths', 
-      header: 'Term', 
-      cell: (loan: LoanWithClient) => `${loan.term_months} months`
-    },
-    { 
-      key: 'totalAmount', 
-      header: 'Total Amount', 
-      cell: (loan: LoanWithClient) => formatCurrency(Number(loan.total_amount))
-    },
-    { 
-      key: 'monthlyPayment', 
-      header: 'Monthly Payment', 
-      cell: (loan: LoanWithClient) => formatCurrency(Number(loan.monthly_payment))
-    },
-    { 
-      key: 'outstandingBalance', 
-      header: 'Outstanding', 
-      cell: (loan: LoanWithClient) => (
-        <span className="font-medium text-primary">{formatCurrency(Number(loan.outstanding_balance))}</span>
-      )
-    },
-    { 
-      key: 'status', 
-      header: 'Status', 
-      cell: (loan: LoanWithClient) => (
-        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-          loan.status === 'overdue' ? 'bg-destructive/10 text-destructive' : 
-          loan.status === 'active' ? 'bg-success/10 text-success' :
-          'bg-muted text-muted-foreground'
-        }`}>
-          {loan.status.charAt(0).toUpperCase() + loan.status.slice(1)}
-        </span>
-      )
-    },
+    { key: 'clientId', header: 'Client ID', cell: (entry: LoanBookEntry) => <span className="font-mono text-xs text-muted-foreground">{entry.clientId}</span> },
+    { key: 'clientName', header: 'Client Name', cell: (entry: LoanBookEntry) => <span className="font-medium">{entry.clientName}</span> },
+    { key: 'loanId', header: 'Loan ID', cell: (entry: LoanBookEntry) => <span className="text-muted-foreground">{entry.loanId}</span> },
+    { key: 'loanAmount', header: 'Loan Amount', cell: (entry: LoanBookEntry) => formatCurrency(entry.loanAmount) },
+    { key: 'interestAmount', header: 'Interest Amount', cell: (entry: LoanBookEntry) => formatCurrency(entry.interestAmount) },
+    { key: 'repaymentTerm', header: 'Term (Months)', cell: (entry: LoanBookEntry) => entry.repaymentTerm },
+    { key: 'totalExpected', header: 'Total Expected', cell: (entry: LoanBookEntry) => formatCurrency(entry.totalExpected) },
+    { key: 'installmentAmount', header: 'Installment', cell: (entry: LoanBookEntry) => formatCurrency(entry.installmentAmount) },
+    { key: 'frequency', header: 'Frequency', cell: (entry: LoanBookEntry) => entry.frequency },
+    { key: 'outstandingBalance', header: 'Outstanding Balance', cell: (entry: LoanBookEntry) => <span className="font-medium text-primary">{formatCurrency(entry.outstandingBalance)}</span> },
+    { key: 'outstandingPrincipal', header: 'O/S Principal', cell: (entry: LoanBookEntry) => formatCurrency(entry.outstandingPrincipal) },
+    { key: 'outstandingInterest', header: 'O/S Interest', cell: (entry: LoanBookEntry) => formatCurrency(entry.outstandingInterest) },
+    { key: 'arrearsAmount', header: 'Arrears', cell: (entry: LoanBookEntry) => (
+      <span className={entry.arrearsAmount > 0 ? 'text-destructive font-medium' : 'text-muted-foreground'}>
+        {formatCurrency(entry.arrearsAmount)}
+      </span>
+    )},
   ];
 
-  const totalOutstanding = filteredData.reduce((sum, loan) => sum + Number(loan.outstanding_balance), 0);
-  const overdueLoans = filteredData.filter(loan => loan.status === 'overdue');
-  const totalArrears = overdueLoans.reduce((sum, loan) => sum + Number(loan.outstanding_balance), 0);
+  const totalOutstanding = filteredData.reduce((sum, e) => sum + e.outstandingBalance, 0);
+  const totalArrears = filteredData.reduce((sum, e) => sum + e.arrearsAmount, 0);
   const totalLoans = filteredData.length;
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -190,12 +160,10 @@ export default function LoanBook() {
         </Card>
         <Card className="p-4 sm:p-0">
           <CardHeader className="p-0 sm:p-6 flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Overdue Loans</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Arrears</CardTitle>
           </CardHeader>
           <CardContent className="p-0 sm:p-6 sm:pt-0">
-            <div className="text-xl sm:text-2xl font-bold text-destructive">
-              {overdueLoans.length} ({formatCurrency(totalArrears)})
-            </div>
+            <div className="text-xl sm:text-2xl font-bold text-destructive">{formatCurrency(totalArrears)}</div>
           </CardContent>
         </Card>
       </div>
@@ -217,12 +185,12 @@ export default function LoanBook() {
               <div className="flex gap-2">
                 <Select value={arrearsFilter} onValueChange={setArrearsFilter}>
                   <SelectTrigger className="h-10 sm:h-9 flex-1 sm:w-40">
-                    <SelectValue placeholder="Status" />
+                    <SelectValue placeholder="Arrears Status" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Loans</SelectItem>
-                    <SelectItem value="with-arrears">Overdue</SelectItem>
-                    <SelectItem value="no-arrears">Current</SelectItem>
+                    <SelectItem value="with-arrears">With Arrears</SelectItem>
+                    <SelectItem value="no-arrears">No Arrears</SelectItem>
                   </SelectContent>
                 </Select>
                 {hasActiveFilters && (
@@ -236,7 +204,7 @@ export default function LoanBook() {
           </div>
           {hasActiveFilters && (
             <p className="text-sm text-muted-foreground mt-2">
-              Showing {filteredData.length} of {loans?.length || 0} loans
+              Showing {filteredData.length} of {mockLoanBookData.length} loans
             </p>
           )}
         </CardHeader>

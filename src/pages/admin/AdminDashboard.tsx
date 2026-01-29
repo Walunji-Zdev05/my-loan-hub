@@ -4,9 +4,9 @@ import {
   TrendingUp, 
   AlertTriangle, 
   Percent,
+  Users,
   ClipboardList,
-  ArrowRight,
-  Loader2
+  ArrowRight
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -26,64 +26,22 @@ import {
 
 import { StatCard } from '@/components/shared/StatCard';
 import { Button } from '@/components/ui/button';
-import { useDashboardStats, useLoans } from '@/hooks/useLoans';
+import { 
+  getDashboardStats, 
+  getMonthlyDisbursements, 
+  getCollectionTrend,
+  getLoanPortfolio,
+  getLoanStatusDistribution,
+  loanApplications 
+} from '@/lib/mockData';
 
 export default function AdminDashboard() {
-  const { data: stats, isLoading: statsLoading } = useDashboardStats();
-  const { data: loans, isLoading: loansLoading } = useLoans();
-  
-  const pendingApps = loans?.filter(l => l.status === 'applied') || [];
-
-  // Calculate loan status distribution
-  const loanStatuses = loans ? (() => {
-    const statusCounts = loans.reduce((acc, loan) => {
-      acc[loan.status] = (acc[loan.status] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    return [
-      { name: 'Active', value: (statusCounts['active'] || 0) + (statusCounts['disbursed'] || 0), color: 'hsl(173, 58%, 39%)' },
-      { name: 'Overdue', value: statusCounts['overdue'] || 0, color: 'hsl(0, 84%, 60%)' },
-      { name: 'Pending', value: statusCounts['applied'] || 0, color: 'hsl(38, 92%, 50%)' },
-    ].filter(item => item.value > 0);
-  })() : [];
-
-  // Calculate portfolio distribution by product
-  const portfolio = loans ? (() => {
-    const productTotals = loans.reduce((acc, loan) => {
-      const productName = loan.loan_products?.name || 'Unknown';
-      acc[productName] = (acc[productName] || 0) + Number(loan.outstanding_balance);
-      return acc;
-    }, {} as Record<string, number>);
-
-    const colors = ['hsl(173, 58%, 39%)', 'hsl(222, 47%, 20%)', 'hsl(38, 92%, 50%)', 'hsl(158, 64%, 40%)'];
-    return Object.entries(productTotals)
-      .map(([name, value], index) => ({
-        name,
-        value,
-        color: colors[index % colors.length],
-      }))
-      .filter(item => item.value > 0);
-  })() : [];
-
-  // Mock chart data (would come from analytics in production)
-  const disbursements = [
-    { month: 'Jul', amount: 125000 },
-    { month: 'Aug', amount: 180000 },
-    { month: 'Sep', amount: 155000 },
-    { month: 'Oct', amount: 210000 },
-    { month: 'Nov', amount: 195000 },
-    { month: 'Dec', amount: 230000 },
-  ];
-
-  const collections = [
-    { month: 'Jul', collected: 45000, expected: 50000 },
-    { month: 'Aug', collected: 62000, expected: 65000 },
-    { month: 'Sep', collected: 58000, expected: 60000 },
-    { month: 'Oct', collected: 71000, expected: 75000 },
-    { month: 'Nov', collected: 68000, expected: 72000 },
-    { month: 'Dec', collected: 82000, expected: 85000 },
-  ];
+  const stats = getDashboardStats();
+  const disbursements = getMonthlyDisbursements();
+  const collections = getCollectionTrend();
+  const portfolio = getLoanPortfolio();
+  const loanStatuses = getLoanStatusDistribution().filter(status => status.name !== 'Paid');
+  const pendingApps = loanApplications.filter(a => a.status === 'pending');
 
   const formatCurrency = (amount: number) => {
     if (amount >= 1000000) {
@@ -96,21 +54,6 @@ export default function AdminDashboard() {
 
   const formatFullCurrency = (amount: number) => 
     `K${amount.toLocaleString()}`;
-
-  const formatDate = (date: string) => 
-    new Date(date).toLocaleDateString('en-MW', { 
-      day: 'numeric', 
-      month: 'short', 
-      year: 'numeric' 
-    });
-
-  if (statsLoading || loansLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -141,26 +84,26 @@ export default function AdminDashboard() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Disbursed"
-          value={formatCurrency(stats?.totalDisbursed || 0)}
+          value={formatCurrency(stats.totalDisbursed)}
           icon={<Wallet className="h-5 w-5" />}
           trend={{ value: 12, label: 'vs last month' }}
           variant="primary"
         />
         <StatCard
           title="Outstanding Balance"
-          value={formatCurrency(stats?.outstandingBalance || 0)}
-          subtitle={`${stats?.activeLoansCount || 0} active loans`}
+          value={formatCurrency(stats.outstandingBalance)}
+          subtitle={`${stats.activeLoansCount} active loans`}
           icon={<TrendingUp className="h-5 w-5" />}
         />
         <StatCard
           title="Overdue Loans"
-          value={stats?.overdueCount || 0}
-          subtitle={formatFullCurrency(stats?.overdueAmount || 0)}
+          value={stats.overdueCount}
+          subtitle={formatFullCurrency(stats.overdueAmount)}
           icon={<AlertTriangle className="h-5 w-5" />}
         />
         <StatCard
           title="Collection Rate"
-          value={`${stats?.collectionRate || 0}%`}
+          value={`${stats.collectionRate}%`}
           icon={<Percent className="h-5 w-5" />}
           trend={{ value: 3.2, label: 'vs last month' }}
           variant="accent"
@@ -344,21 +287,19 @@ export default function AdminDashboard() {
             </Button>
           </div>
           <div className="space-y-2 sm:space-y-3">
-            {pendingApps.slice(0, 3).map((loan) => (
+            {pendingApps.slice(0, 3).map((app) => (
               <div 
-                key={loan.id}
+                key={app.id}
                 className="flex flex-col gap-2 rounded-lg border border-border p-3 sm:p-4 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="min-w-0">
-                  <p className="font-medium truncate">
-                    {loan.clients?.first_name} {loan.clients?.last_name}
-                  </p>
+                  <p className="font-medium truncate">{app.clientName}</p>
                   <p className="text-sm text-muted-foreground truncate">
-                    {loan.loan_products?.name} · {formatFullCurrency(Number(loan.principal_amount))}
+                    {app.product} · {formatFullCurrency(app.amount)}
                   </p>
                 </div>
                 <div className="flex items-center justify-between sm:flex-col sm:text-right sm:items-end gap-1">
-                  <p className="text-xs sm:text-sm text-muted-foreground">{formatDate(loan.applied_at)}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{app.appliedDate}</p>
                   <Link 
                     to="/admin/applications" 
                     className="text-sm font-medium text-accent hover:underline"

@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { LogOut, User, Settings, Bell, AlertCircle, UserCheck, CreditCard, Clock, Loader2 } from 'lucide-react';
+import { LogOut, User, Settings, Bell, AlertCircle, UserCheck, CreditCard, Clock } from 'lucide-react';
 
 const notifications = [
   {
@@ -55,17 +55,8 @@ const notifications = [
 ];
 
 export function AdminLayout() {
-  const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const unreadCount = notifications.filter(n => n.unread).length;
-
-  // Show loading state while checking auth
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
