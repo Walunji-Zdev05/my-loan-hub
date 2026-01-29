@@ -116,7 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const redirectUrl = `${window.location.origin}/`;
       
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -131,7 +131,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error };
       }
 
-      // Admin role is automatically assigned by database trigger
+      // Create admin role for the new user
+      if (data.user) {
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: data.user.id,
+            role: 'admin',
+          });
+
+        if (roleError) {
+          console.error('Error creating user role:', roleError);
+          // Don't return error - user is created, role creation might fail due to RLS
+        }
+      }
+
       return { error: null };
     } catch (err) {
       return { error: err as Error };
