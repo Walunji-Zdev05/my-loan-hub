@@ -1,17 +1,15 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Wallet, Users, Shield } from 'lucide-react';
+import { Wallet, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAuth, UserRole } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [selectedRole, setSelectedRole] = useState<UserRole>('borrower');
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -24,14 +22,14 @@ export default function Login() {
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 800));
 
-    const success = login(email, password, selectedRole);
+    const success = login(email, password);
     
     if (success) {
       toast({
         title: 'Welcome back!',
-        description: `Signed in as ${selectedRole}`,
+        description: 'Signed in as admin',
       });
-      navigate(`/${selectedRole}`);
+      navigate('/admin');
     } else {
       toast({
         title: 'Login failed',
@@ -71,9 +69,9 @@ export default function Login() {
             </div>
             <div className="flex items-center gap-4 text-primary-foreground/90">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10">
-                <Users className="h-5 w-5" />
+                <Shield className="h-5 w-5" />
               </div>
-              <span>Multi-role access control</span>
+              <span>Admin-only access control</span>
             </div>
           </div>
         </div>
@@ -100,50 +98,13 @@ export default function Login() {
             </p>
           </div>
 
-          {/* Role selector */}
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => setSelectedRole('borrower')}
-              className={cn(
-                'flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all',
-                selectedRole === 'borrower'
-                  ? 'border-accent bg-accent/5'
-                  : 'border-border hover:border-accent/50'
-              )}
-            >
-              <Users className={cn(
-                'h-6 w-6',
-                selectedRole === 'borrower' ? 'text-accent' : 'text-muted-foreground'
-              )} />
-              <span className={cn(
-                'text-sm font-medium',
-                selectedRole === 'borrower' ? 'text-accent' : 'text-muted-foreground'
-              )}>
-                Borrower
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedRole('admin')}
-              className={cn(
-                'flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all',
-                selectedRole === 'admin'
-                  ? 'border-accent bg-accent/5'
-                  : 'border-border hover:border-accent/50'
-              )}
-            >
-              <Shield className={cn(
-                'h-6 w-6',
-                selectedRole === 'admin' ? 'text-accent' : 'text-muted-foreground'
-              )} />
-              <span className={cn(
-                'text-sm font-medium',
-                selectedRole === 'admin' ? 'text-accent' : 'text-muted-foreground'
-              )}>
-                Admin
-              </span>
-            </button>
+          {/* Admin access notice */}
+          <div className="flex items-center gap-3 rounded-xl border border-accent/30 bg-accent/5 p-4">
+            <Shield className="h-5 w-5 text-accent shrink-0" />
+            <p className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">Admin access only.</span>{' '}
+              This portal is restricted to authorized administrators.
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
