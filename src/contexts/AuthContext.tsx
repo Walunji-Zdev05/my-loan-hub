@@ -1,36 +1,46 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
+export type UserRole = 'borrower' | 'admin';
+
 interface User {
   id: string;
   name: string;
   email: string;
-  role: 'admin';
+  role: UserRole;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => boolean;
+  login: (email: string, password: string, role: UserRole) => boolean;
   logout: () => void;
   isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Demo admin user
-const adminUser: User = {
-  id: 'A001',
-  name: 'Admin User',
-  email: 'admin@loanpro.com',
-  role: 'admin',
+// Demo users
+const demoUsers: Record<UserRole, User> = {
+  borrower: {
+    id: 'C001',
+    name: 'John Mwangi',
+    email: 'john@email.com',
+    role: 'borrower',
+  },
+  admin: {
+    id: 'A001',
+    name: 'Admin User',
+    email: 'admin@loanpro.com',
+    role: 'admin',
+  },
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
 
-  const login = (email: string, password: string): boolean => {
+  const login = (email: string, password: string, role: UserRole): boolean => {
     // Demo login - in production, this would validate against a backend
     if (password.length >= 4) {
-      setUser(adminUser);
+      setUser(demoUsers[role]);
       return true;
     }
     return false;

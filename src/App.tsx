@@ -9,6 +9,12 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
+// Borrower pages
+import BorrowerDashboard from "./pages/borrower/BorrowerDashboard";
+import BorrowerLoans from "./pages/borrower/BorrowerLoans";
+import RepaymentSchedule from "./pages/borrower/RepaymentSchedule";
+import ApplyLoan from "./pages/borrower/ApplyLoan";
+
 // Admin pages
 import { AdminLayout } from "./components/layout/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -37,6 +43,12 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
+            
+            {/* Borrower Routes */}
+            <Route path="/borrower" element={<BorrowerDashboard />} />
+            <Route path="/borrower/loans" element={<BorrowerLoans />} />
+            <Route path="/borrower/schedule" element={<RepaymentSchedule />} />
+            <Route path="/borrower/apply" element={<ApplyLoan />} />
             
             {/* Admin Routes - Nested under AdminLayout */}
             <Route path="/admin" element={<AdminLayout />}>
