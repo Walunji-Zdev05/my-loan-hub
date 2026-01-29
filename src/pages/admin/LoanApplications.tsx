@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, X, Eye, DollarSign, Send, AlertCircle } from 'lucide-react';
+import { Check, X, Eye, DollarSign, Send, AlertCircle, Loader2 } from 'lucide-react';
 
 import { DataTable } from '@/components/shared/DataTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -11,15 +11,35 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { loanApplications, LoanApplication, loanProducts } from '@/lib/mockData';
+import { useLoans, useUpdateLoan, LoanWithClient } from '@/hooks/useLoans';
+import { useFeePayments, useCreateFeePayment } from '@/hooks/useFeePayments';
 import { cn } from '@/lib/utils';
+
+type ActionType = 'approve' | 'reject' | 'confirmAppFee' | 'confirmApprovalFee' | 'disburse' | null;
 
 export default function LoanApplications() {
   const { toast } = useToast();
-  const [applications, setApplications] = useState(loanApplications);
-  const [selectedApp, setSelectedApp] = useState<LoanApplication | null>(null);
-  const [actionType, setActionType] = useState<'approve' | 'reject' | 'confirmAppFee' | 'confirmApprovalFee' | 'disburse' | null>(null);
+  const [selectedApp, setSelectedApp] = useState<LoanWithClient | null>(null);
+  const [actionType, setActionType] = useState<ActionType>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'bank_transfer' | 'mobile_money'>('cash');
+
+  const { data: allLoans, isLoading } = useLoans();
+  const { data: feePayments } = useFeePayments();
+  const updateLoan = useUpdateLoan();
+  const createFeePayment = useCreateFeePayment();
+
+  // Filter to show only applications (applied, approved statuses)
+  const applications = (allLoans || []).filter(l => 
+    ['applied', 'approved'].includes(l.status)
+  );
 
   const formatCurrency = (amount: number) => 
     `K${amount.toLocaleString()}`;
@@ -31,57 +51,75 @@ export default function LoanApplications() {
       year: 'numeric' 
     });
 
-  const handleAction = (app: LoanApplication, action: typeof actionType) => {
+  // Check if fee has been paid for a loan
+  const hasPaidFee = (loanId: string, feeType: 'application_fee' | 'approval_fee') => {
+    return (feePayments || []).some(fp => fp.loan_id === loanId && fp.fee_type === feeType);
+  };
+
+  const handleAction = (app: LoanWithClient, action: ActionType) => {
     setSelectedApp(app);
     setActionType(action);
   };
 
-  const confirmAction = () => {
+  const confirmAction = async () => {
     if (!selectedApp || !actionType) return;
 
-    const today = new Date().toISOString().split('T')[0];
+    try {
+      switch (actionType) {
+        case 'confirmAppFee':
+          await createFeePayment.mutateAsync({
+            loan_id: selectedApp.id,
+            fee_type: 'application_fee',
+            amount: selectedApp.loan_products?.application_fee || 0,
+            payment_method: paymentMethod,
+          });
+          toast({ title: 'Application Fee Confirmed', description: `Application fee payment has been recorded.` });
+          break;
+          
+        case 'approve':
+          await updateLoan.mutateAsync({ id: selectedApp.id, status: 'approved', approved_at: new Date().toISOString() });
+          toast({ title: 'Application Approved', description: `Loan application has been approved.` });
+          break;
+          
+        case 'reject':
+          await updateLoan.mutateAsync({ id: selectedApp.id, status: 'rejected' });
+          toast({ title: 'Application Rejected', description: `Loan application has been rejected.` });
+          break;
+          
+        case 'confirmApprovalFee':
+          await createFeePayment.mutateAsync({
+            loan_id: selectedApp.id,
+            fee_type: 'approval_fee',
+            amount: selectedApp.loan_products?.approval_fee || 0,
+            payment_method: paymentMethod,
+          });
+          toast({ title: 'Approval Fee Confirmed', description: `Approval fee payment has been recorded.` });
+          break;
+          
+        case 'disburse':
+          await updateLoan.mutateAsync({ 
+            id: selectedApp.id, 
+            status: 'active', 
+            disbursed_at: new Date().toISOString(),
+            next_payment_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          });
+          toast({ title: 'Loan Disbursed', description: `Loan has been disbursed.` });
+          break;
+      }
+    } catch (error) {
+      toast({ title: 'Error', description: 'Action failed. Please try again.', variant: 'destructive' });
+    }
 
-    setApplications(prev => 
-      prev.map(app => {
-        if (app.id !== selectedApp.id) return app;
-        
-        switch (actionType) {
-          case 'confirmAppFee':
-            return { ...app, applicationFeePaid: true, applicationFeePaidDate: today };
-          case 'approve':
-            return { ...app, status: 'approved' as const };
-          case 'reject':
-            return { ...app, status: 'rejected' as const };
-          case 'confirmApprovalFee':
-            return { ...app, approvalFeePaid: true, approvalFeePaidDate: today };
-          case 'disburse':
-            return { ...app, status: 'disbursed' as const };
-          default:
-            return app;
-        }
-      })
-    );
-
-    const messages: Record<string, { title: string; description: string }> = {
-      confirmAppFee: { title: 'Application Fee Confirmed', description: `Application fee payment for ${selectedApp.id} has been confirmed.` },
-      approve: { title: 'Application Approved', description: `Loan application ${selectedApp.id} has been approved.` },
-      reject: { title: 'Application Rejected', description: `Loan application ${selectedApp.id} has been rejected.` },
-      confirmApprovalFee: { title: 'Approval Fee Confirmed', description: `Approval fee payment for ${selectedApp.id} has been confirmed.` },
-      disburse: { title: 'Loan Disbursed', description: `Loan for application ${selectedApp.id} has been disbursed.` },
-    };
-
-    toast(messages[actionType]);
     setSelectedApp(null);
     setActionType(null);
   };
 
-  const getProductDetails = (productName: string) => 
-    loanProducts.find(p => p.name === productName);
+  const getActionButtons = (app: LoanWithClient) => {
+    const appFeePaid = hasPaidFee(app.id, 'application_fee');
+    const approvalFeePaid = hasPaidFee(app.id, 'approval_fee');
 
-  const getActionButtons = (app: LoanApplication) => {
-    // Pending status: need to confirm application fee before approval
-    if (app.status === 'pending') {
-      if (!app.applicationFeePaid) {
+    if (app.status === 'applied') {
+      if (!appFeePaid) {
         return (
           <Button 
             variant="outline" 
@@ -116,9 +154,8 @@ export default function LoanApplications() {
       );
     }
 
-    // Approved status: need to confirm approval fee before disbursement
     if (app.status === 'approved') {
-      if (!app.approvalFeePaid) {
+      if (!approvalFeePaid) {
         return (
           <Button 
             variant="outline" 
@@ -143,7 +180,6 @@ export default function LoanApplications() {
       );
     }
 
-    // Other statuses: just view
     return (
       <Button variant="ghost" size="sm">
         <Eye className="h-4 w-4 mr-1" />
@@ -164,46 +200,46 @@ export default function LoanApplications() {
 
   const columns = [
     {
-      key: 'id',
+      key: 'loan_number',
       header: 'Application ID',
-      cell: (app: LoanApplication) => (
-        <span className="font-medium">{app.id}</span>
+      cell: (app: LoanWithClient) => (
+        <span className="font-medium">{app.loan_number}</span>
       ),
     },
     {
       key: 'client',
       header: 'Client',
-      cell: (app: LoanApplication) => (
+      cell: (app: LoanWithClient) => (
         <div>
-          <p className="font-medium">{app.clientName}</p>
-          <p className="text-sm text-muted-foreground">NID: {app.nationalId}</p>
+          <p className="font-medium">{app.clients?.first_name} {app.clients?.last_name}</p>
+          <p className="text-sm text-muted-foreground">{app.clients?.client_number}</p>
         </div>
       ),
     },
     {
       key: 'product',
       header: 'Product',
-      cell: (app: LoanApplication) => app.product,
+      cell: (app: LoanWithClient) => app.loan_products?.name || 'Unknown',
     },
     {
       key: 'amount',
       header: 'Amount',
-      cell: (app: LoanApplication) => formatCurrency(app.amount),
+      cell: (app: LoanWithClient) => formatCurrency(Number(app.principal_amount)),
     },
     {
       key: 'fees',
       header: 'Fee Status',
-      cell: (app: LoanApplication) => (
+      cell: (app: LoanWithClient) => (
         <div className="flex flex-col gap-1">
           <FeeStatusIndicator 
-            paid={app.applicationFeePaid} 
+            paid={hasPaidFee(app.id, 'application_fee')} 
             label="App" 
-            amount={app.applicationFeeAmount} 
+            amount={app.loan_products?.application_fee || 0} 
           />
           <FeeStatusIndicator 
-            paid={app.approvalFeePaid} 
+            paid={hasPaidFee(app.id, 'approval_fee')} 
             label="Approval" 
-            amount={app.approvalFeeAmount} 
+            amount={app.loan_products?.approval_fee || 0} 
           />
         </div>
       ),
@@ -211,17 +247,17 @@ export default function LoanApplications() {
     {
       key: 'date',
       header: 'Applied',
-      cell: (app: LoanApplication) => formatDate(app.appliedDate),
+      cell: (app: LoanWithClient) => formatDate(app.applied_at),
     },
     {
       key: 'status',
       header: 'Status',
-      cell: (app: LoanApplication) => <StatusBadge status={app.status} />,
+      cell: (app: LoanWithClient) => <StatusBadge status={app.status} />,
     },
     {
       key: 'actions',
       header: '',
-      cell: (app: LoanApplication) => (
+      cell: (app: LoanWithClient) => (
         <div className="flex items-center gap-2">
           {getActionButtons(app)}
         </div>
@@ -229,10 +265,10 @@ export default function LoanApplications() {
     },
   ];
 
-  const pendingCount = applications.filter(a => a.status === 'pending').length;
+  const pendingCount = applications.filter(a => a.status === 'applied').length;
   const awaitingFees = applications.filter(a => 
-    (a.status === 'pending' && !a.applicationFeePaid) || 
-    (a.status === 'approved' && !a.approvalFeePaid)
+    (a.status === 'applied' && !hasPaidFee(a.id, 'application_fee')) || 
+    (a.status === 'approved' && !hasPaidFee(a.id, 'approval_fee'))
   ).length;
 
   const getDialogContent = () => {
@@ -247,17 +283,25 @@ export default function LoanApplications() {
     };
 
     const descriptions: Record<string, string> = {
-      confirmAppFee: `Confirm that the application fee of ${formatCurrency(selectedApp.applicationFeeAmount)} has been paid by the client.`,
-      approve: 'Are you sure you want to approve this loan application? The loan will await approval fee payment before disbursement.',
-      reject: 'Are you sure you want to reject this loan application? The client will be notified.',
-      confirmApprovalFee: `Confirm that the approval fee of ${formatCurrency(selectedApp.approvalFeeAmount)} has been paid by the client.`,
-      disburse: `Are you sure you want to disburse ${formatCurrency(selectedApp.amount)} for this loan?`,
+      confirmAppFee: `Confirm that the application fee of ${formatCurrency(selectedApp.loan_products?.application_fee || 0)} has been paid.`,
+      approve: 'Are you sure you want to approve this loan application?',
+      reject: 'Are you sure you want to reject this loan application?',
+      confirmApprovalFee: `Confirm that the approval fee of ${formatCurrency(selectedApp.loan_products?.approval_fee || 0)} has been paid.`,
+      disburse: `Are you sure you want to disburse ${formatCurrency(Number(selectedApp.principal_amount))}?`,
     };
 
     return { title: titles[actionType], description: descriptions[actionType] };
   };
 
   const dialogContent = getDialogContent();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -299,27 +343,45 @@ export default function LoanApplications() {
               <div className="rounded-lg bg-muted/50 p-4 space-y-3">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Client</span>
-                  <span className="font-medium">{selectedApp.clientName}</span>
+                  <span className="font-medium">{selectedApp.clients?.first_name} {selectedApp.clients?.last_name}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Amount</span>
-                  <span className="font-medium">{formatCurrency(selectedApp.amount)}</span>
+                  <span className="font-medium">{formatCurrency(Number(selectedApp.principal_amount))}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Product</span>
-                  <span className="font-medium">{selectedApp.product}</span>
+                  <span className="font-medium">{selectedApp.loan_products?.name}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Term</span>
-                  <span className="font-medium">{selectedApp.term} {selectedApp.termUnit}</span>
+                  <span className="font-medium">{selectedApp.term_months} months</span>
                 </div>
                 {(actionType === 'confirmAppFee' || actionType === 'confirmApprovalFee') && (
-                  <div className="flex justify-between border-t border-border pt-3 mt-3">
-                    <span className="text-muted-foreground font-medium">Fee Amount</span>
-                    <span className="font-bold text-accent">
-                      {formatCurrency(actionType === 'confirmAppFee' ? selectedApp.applicationFeeAmount : selectedApp.approvalFeeAmount)}
-                    </span>
-                  </div>
+                  <>
+                    <div className="flex justify-between border-t border-border pt-3 mt-3">
+                      <span className="text-muted-foreground font-medium">Fee Amount</span>
+                      <span className="font-bold text-accent">
+                        {formatCurrency(actionType === 'confirmAppFee' 
+                          ? (selectedApp.loan_products?.application_fee || 0)
+                          : (selectedApp.loan_products?.approval_fee || 0)
+                        )}
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm text-muted-foreground">Payment Method</label>
+                      <Select value={paymentMethod} onValueChange={(v: 'cash' | 'bank_transfer' | 'mobile_money') => setPaymentMethod(v)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="cash">Cash</SelectItem>
+                          <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                          <SelectItem value="mobile_money">Mobile Money</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
                 )}
               </div>
               <p className="text-sm text-muted-foreground">
@@ -334,6 +396,7 @@ export default function LoanApplications() {
             <Button 
               variant={actionType === 'reject' ? 'destructive' : actionType === 'disburse' ? 'accent' : 'success'}
               onClick={confirmAction}
+              disabled={updateLoan.isPending || createFeePayment.isPending}
             >
               {actionType === 'confirmAppFee' && 'Confirm Payment'}
               {actionType === 'approve' && 'Approve'}
