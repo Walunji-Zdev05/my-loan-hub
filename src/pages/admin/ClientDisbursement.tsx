@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, AlertCircle, Eye, DollarSign, Send } from 'lucide-react';
+import { Check, AlertCircle, Eye, DollarSign, Send, Loader2 } from 'lucide-react';
 
 import { DataTable } from '@/components/shared/DataTable';
 import { Button } from '@/components/ui/button';
@@ -11,16 +11,27 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { loanApplications, clients, LoanApplication } from '@/lib/mockData';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { useLoans, useUpdateLoan, LoanWithDetails } from '@/hooks/useLoans';
+import { useRecordFeePayment, useLoanFeeStatus, PaymentMethod } from '@/hooks/useFeePayments';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 
 export default function ClientDisbursement() {
-  const [applications, setApplications] = useState(
-    loanApplications.filter(a => a.status === 'approved')
-  );
-  const [selectedApp, setSelectedApp] = useState<LoanApplication | null>(null);
+  const { data: applications, isLoading } = useLoans('approved');
+  const updateLoan = useUpdateLoan();
+  const recordFee = useRecordFeePayment();
+  
+  const [selectedApp, setSelectedApp] = useState<LoanWithDetails | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
 
   const formatDate = (date: string) =>
     new Date(date).toLocaleDateString('en-MW', {
@@ -32,92 +43,92 @@ export default function ClientDisbursement() {
   const formatCurrency = (amount: number) =>
     `K${amount.toLocaleString()}`;
 
-  const getClientDetails = (clientId: string) =>
-    clients.find(c => c.id === clientId);
-
-  const handleConfirmApprovalFee = (appId: string) => {
-    setApplications(prev =>
-      prev.map(a =>
-        a.id === appId
-          ? { ...a, approvalFeePaid: true, approvalFeePaidDate: new Date().toISOString().split('T')[0] }
-          : a
-      )
-    );
-    toast({
-      title: 'Approval Fee Confirmed',
-      description: 'The approval fee payment has been recorded',
-    });
+  const handleConfirmApprovalFee = async (app: LoanWithDetails) => {
+    try {
+      await recordFee.mutateAsync({
+        loanId: app.id,
+        feeType: 'approval_fee',
+        amount: Number(app.loan_products?.approval_fee || 0),
+        paymentMethod,
+      });
+      toast({
+        title: 'Approval Fee Confirmed',
+        description: 'The approval fee payment has been recorded',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to record fee',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const handleDisburse = (appId: string) => {
-    setApplications(prev => prev.filter(a => a.id !== appId));
-    setShowDetails(false);
-    setSelectedApp(null);
-    toast({
-      title: 'Loan Disbursed',
-      description: 'The loan has been successfully disbursed to the client',
-    });
+  const handleDisburse = async (appId: string) => {
+    try {
+      await updateLoan.mutateAsync({
+        id: appId,
+        status: 'disbursed',
+        disbursed_at: new Date().toISOString(),
+      });
+      setShowDetails(false);
+      setSelectedApp(null);
+      toast({
+        title: 'Loan Disbursed',
+        description: 'The loan has been successfully disbursed to the client',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to disburse',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const totalPendingDisbursement = applications.reduce((sum, a) => sum + a.amount, 0);
+  const totalPendingDisbursement = applications?.reduce((sum, a) => sum + Number(a.principal_amount), 0) || 0;
 
   const columns = [
     {
-      key: 'id',
-      header: 'Application ID',
-      cell: (app: LoanApplication) => <span className="font-medium">{app.id}</span>,
+      key: 'loan_number',
+      header: 'Loan ID',
+      cell: (app: LoanWithDetails) => <span className="font-medium font-mono text-sm">{app.loan_number}</span>,
     },
     {
       key: 'client',
       header: 'Client',
-      cell: (app: LoanApplication) => (
+      cell: (app: LoanWithDetails) => (
         <div>
-          <p className="font-medium">{app.clientName}</p>
-          <p className="text-sm text-muted-foreground">NID: {app.nationalId}</p>
+          <p className="font-medium">{app.clients?.first_name} {app.clients?.last_name}</p>
+          <p className="text-sm text-muted-foreground">NID: {app.clients?.id_number || 'N/A'}</p>
         </div>
       ),
     },
     {
       key: 'amount',
       header: 'Loan Amount',
-      cell: (app: LoanApplication) => (
+      cell: (app: LoanWithDetails) => (
         <div>
-          <p className="font-medium">{formatCurrency(app.amount)}</p>
-          <p className="text-sm text-muted-foreground">{app.product}</p>
+          <p className="font-medium">{formatCurrency(Number(app.principal_amount))}</p>
+          <p className="text-sm text-muted-foreground">{app.loan_products?.name}</p>
         </div>
       ),
     },
     {
       key: 'term',
       header: 'Term',
-      cell: (app: LoanApplication) => `${app.term} ${app.termUnit}`,
+      cell: (app: LoanWithDetails) => `${app.term_months} months`,
+      hideOnMobile: true,
     },
     {
       key: 'approvalFee',
       header: 'Approval Fee',
-      cell: (app: LoanApplication) => (
-        <div className={cn(
-          'flex items-center gap-2 text-sm',
-          app.approvalFeePaid ? 'text-success' : 'text-warning'
-        )}>
-          {app.approvalFeePaid ? (
-            <>
-              <Check className="h-4 w-4" />
-              <span>Paid</span>
-            </>
-          ) : (
-            <>
-              <AlertCircle className="h-4 w-4" />
-              <span>Pending</span>
-            </>
-          )}
-        </div>
-      ),
+      cell: (app: LoanWithDetails) => <FeeStatus loanId={app.id} />,
     },
     {
       key: 'actions',
       header: '',
-      cell: (app: LoanApplication) => (
+      cell: (app: LoanWithDetails) => (
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -130,29 +141,23 @@ export default function ClientDisbursement() {
             <Eye className="h-4 w-4 mr-1" />
             View
           </Button>
-          {!app.approvalFeePaid && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => handleConfirmApprovalFee(app.id)}
-            >
-              <DollarSign className="h-4 w-4 mr-1" />
-              Confirm Fee
-            </Button>
-          )}
-          {app.approvalFeePaid && (
-            <Button
-              size="sm"
-              onClick={() => handleDisburse(app.id)}
-            >
-              <Send className="h-4 w-4 mr-1" />
-              Disburse
-            </Button>
-          )}
+          <ActionButtons 
+            app={app} 
+            onConfirmFee={() => handleConfirmApprovalFee(app)}
+            onDisburse={() => handleDisburse(app.id)}
+          />
         </div>
       ),
     },
   ];
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -172,7 +177,7 @@ export default function ClientDisbursement() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{applications.length}</p>
+            <p className="text-2xl font-bold">{applications?.length || 0}</p>
           </CardContent>
         </Card>
         <Card>
@@ -192,9 +197,7 @@ export default function ClientDisbursement() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-success">
-              {applications.filter(a => a.approvalFeePaid).length}
-            </p>
+            <p className="text-2xl font-bold text-success">0</p>
           </CardContent>
         </Card>
       </div>
@@ -202,7 +205,7 @@ export default function ClientDisbursement() {
       {/* Applications Table */}
       <DataTable
         columns={columns}
-        data={applications}
+        data={applications || []}
         emptyMessage="No approved loans pending disbursement"
       />
 
@@ -220,27 +223,12 @@ export default function ClientDisbursement() {
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
                     <span className="text-muted-foreground">Name:</span>
-                    <p className="font-medium">{selectedApp.clientName}</p>
+                    <p className="font-medium">{selectedApp.clients?.first_name} {selectedApp.clients?.last_name}</p>
                   </div>
                   <div>
                     <span className="text-muted-foreground">National ID:</span>
-                    <p className="font-medium">{selectedApp.nationalId}</p>
+                    <p className="font-medium">{selectedApp.clients?.id_number || 'N/A'}</p>
                   </div>
-                  {(() => {
-                    const client = getClientDetails(selectedApp.clientId);
-                    return client ? (
-                      <>
-                        <div>
-                          <span className="text-muted-foreground">Phone:</span>
-                          <p className="font-medium">{client.phone}</p>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Email:</span>
-                          <p className="font-medium">{client.email}</p>
-                        </div>
-                      </>
-                    ) : null;
-                  })()}
                 </div>
               </div>
 
@@ -250,83 +238,187 @@ export default function ClientDisbursement() {
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
                     <span className="text-muted-foreground">Product:</span>
-                    <p className="font-medium">{selectedApp.product}</p>
+                    <p className="font-medium">{selectedApp.loan_products?.name}</p>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Amount:</span>
-                    <p className="font-medium">{formatCurrency(selectedApp.amount)}</p>
+                    <p className="font-medium">{formatCurrency(Number(selectedApp.principal_amount))}</p>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Term:</span>
-                    <p className="font-medium">{selectedApp.term} {selectedApp.termUnit}</p>
+                    <p className="font-medium">{selectedApp.term_months} months</p>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Purpose:</span>
-                    <p className="font-medium">{selectedApp.purpose}</p>
+                    <span className="text-muted-foreground">Interest Rate:</span>
+                    <p className="font-medium">{selectedApp.interest_rate}%</p>
                   </div>
                 </div>
               </div>
 
               {/* Fee Statuses */}
+              <FeeStatusDetail 
+                loanId={selectedApp.id} 
+                appFee={Number(selectedApp.loan_products?.application_fee || 0)}
+                approvalFee={Number(selectedApp.loan_products?.approval_fee || 0)}
+              />
+
+              {/* Payment Method Selection */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between p-3 rounded-lg bg-success/10">
-                  <div className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-success" />
-                    <span className="text-success">Application Fee: {formatCurrency(selectedApp.applicationFeeAmount)}</span>
-                  </div>
-                  {selectedApp.applicationFeePaidDate && (
-                    <span className="text-sm text-muted-foreground">
-                      Paid: {formatDate(selectedApp.applicationFeePaidDate)}
-                    </span>
-                  )}
-                </div>
-                
-                <div className={cn(
-                  'flex items-center justify-between p-3 rounded-lg',
-                  selectedApp.approvalFeePaid ? 'bg-success/10' : 'bg-warning/10'
-                )}>
-                  <div className="flex items-center gap-2">
-                    {selectedApp.approvalFeePaid ? (
-                      <Check className="h-5 w-5 text-success" />
-                    ) : (
-                      <AlertCircle className="h-5 w-5 text-warning" />
-                    )}
-                    <span className={selectedApp.approvalFeePaid ? 'text-success' : 'text-warning'}>
-                      Approval Fee: {formatCurrency(selectedApp.approvalFeeAmount)}
-                    </span>
-                  </div>
-                  {selectedApp.approvalFeePaid && selectedApp.approvalFeePaidDate && (
-                    <span className="text-sm text-muted-foreground">
-                      Paid: {formatDate(selectedApp.approvalFeePaidDate)}
-                    </span>
-                  )}
-                </div>
+                <Label>Payment Method (for fee confirmation)</Label>
+                <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">Cash</SelectItem>
+                    <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                    <SelectItem value="mobile_money">Mobile Money</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           )}
           <DialogFooter>
-            {selectedApp && !selectedApp.approvalFeePaid && (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  handleConfirmApprovalFee(selectedApp.id);
-                  setSelectedApp({ ...selectedApp, approvalFeePaid: true, approvalFeePaidDate: new Date().toISOString().split('T')[0] });
-                }}
-              >
-                <DollarSign className="h-4 w-4 mr-1" />
-                Confirm Fee Payment
-              </Button>
-            )}
-            <Button
-              disabled={!selectedApp?.approvalFeePaid}
-              onClick={() => selectedApp && handleDisburse(selectedApp.id)}
-            >
-              <Send className="h-4 w-4 mr-1" />
-              Disburse Loan
-            </Button>
+            <DisbursementActions 
+              app={selectedApp}
+              onConfirmFee={() => selectedApp && handleConfirmApprovalFee(selectedApp)}
+              onDisburse={() => selectedApp && handleDisburse(selectedApp.id)}
+              isPending={updateLoan.isPending || recordFee.isPending}
+            />
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+// Component to show fee status
+function FeeStatus({ loanId }: { loanId: string }) {
+  const { data: feeStatus } = useLoanFeeStatus(loanId);
+  
+  return (
+    <div className={cn(
+      'flex items-center gap-2 text-sm',
+      feeStatus?.approvalFeePaid ? 'text-success' : 'text-warning'
+    )}>
+      {feeStatus?.approvalFeePaid ? (
+        <>
+          <Check className="h-4 w-4" />
+          <span>Paid</span>
+        </>
+      ) : (
+        <>
+          <AlertCircle className="h-4 w-4" />
+          <span>Pending</span>
+        </>
+      )}
+    </div>
+  );
+}
+
+// Action buttons component
+function ActionButtons({ 
+  app, 
+  onConfirmFee,
+  onDisburse 
+}: { 
+  app: LoanWithDetails; 
+  onConfirmFee: () => void;
+  onDisburse: () => void;
+}) {
+  const { data: feeStatus } = useLoanFeeStatus(app.id);
+  
+  if (!feeStatus?.approvalFeePaid) {
+    return (
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={onConfirmFee}
+      >
+        <DollarSign className="h-4 w-4 mr-1" />
+        Confirm Fee
+      </Button>
+    );
+  }
+  
+  return (
+    <Button
+      size="sm"
+      onClick={onDisburse}
+    >
+      <Send className="h-4 w-4 mr-1" />
+      Disburse
+    </Button>
+  );
+}
+
+// Component for fee status detail in dialog
+function FeeStatusDetail({ loanId, appFee, approvalFee }: { loanId: string; appFee: number; approvalFee: number }) {
+  const { data: feeStatus } = useLoanFeeStatus(loanId);
+  
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between p-3 rounded-lg bg-success/10">
+        <div className="flex items-center gap-2">
+          <Check className="h-5 w-5 text-success" />
+          <span className="text-success">Application Fee: K{appFee.toLocaleString()}</span>
+        </div>
+      </div>
+      
+      <div className={cn(
+        'flex items-center justify-between p-3 rounded-lg',
+        feeStatus?.approvalFeePaid ? 'bg-success/10' : 'bg-warning/10'
+      )}>
+        <div className="flex items-center gap-2">
+          {feeStatus?.approvalFeePaid ? (
+            <Check className="h-5 w-5 text-success" />
+          ) : (
+            <AlertCircle className="h-5 w-5 text-warning" />
+          )}
+          <span className={feeStatus?.approvalFeePaid ? 'text-success' : 'text-warning'}>
+            Approval Fee: K{approvalFee.toLocaleString()}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Disbursement action buttons
+function DisbursementActions({ 
+  app, 
+  onConfirmFee, 
+  onDisburse,
+  isPending 
+}: { 
+  app: LoanWithDetails | null;
+  onConfirmFee: () => void;
+  onDisburse: () => void;
+  isPending: boolean;
+}) {
+  const { data: feeStatus } = useLoanFeeStatus(app?.id);
+  
+  if (!app) return null;
+  
+  return (
+    <>
+      {!feeStatus?.approvalFeePaid && (
+        <Button
+          variant="outline"
+          onClick={onConfirmFee}
+          disabled={isPending}
+        >
+          <DollarSign className="h-4 w-4 mr-1" />
+          Confirm Fee Payment
+        </Button>
+      )}
+      <Button
+        disabled={!feeStatus?.approvalFeePaid || isPending}
+        onClick={onDisburse}
+      >
+        <Send className="h-4 w-4 mr-1" />
+        Disburse Loan
+      </Button>
+    </>
   );
 }
