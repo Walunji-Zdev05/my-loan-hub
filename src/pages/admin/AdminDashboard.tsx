@@ -4,7 +4,6 @@ import {
   TrendingUp, 
   AlertTriangle, 
   Percent,
-  Users,
   ClipboardList,
   ArrowRight
 } from 'lucide-react';
@@ -26,22 +25,14 @@ import {
 
 import { StatCard } from '@/components/shared/StatCard';
 import { Button } from '@/components/ui/button';
-import { 
-  getDashboardStats, 
-  getMonthlyDisbursements, 
-  getCollectionTrend,
-  getLoanPortfolio,
-  getLoanStatusDistribution,
-  loanApplications 
-} from '@/lib/mockData';
+import { useDashboardStats, useLoanPortfolioDistribution, useLoanStatusDistribution } from '@/hooks/useDashboard';
+import { useLoans } from '@/hooks/useLoans';
 
 export default function AdminDashboard() {
-  const stats = getDashboardStats();
-  const disbursements = getMonthlyDisbursements();
-  const collections = getCollectionTrend();
-  const portfolio = getLoanPortfolio();
-  const loanStatuses = getLoanStatusDistribution().filter(status => status.name !== 'Paid');
-  const pendingApps = loanApplications.filter(a => a.status === 'pending');
+  const { data: stats, isLoading: statsLoading } = useDashboardStats();
+  const { data: portfolio = [] } = useLoanPortfolioDistribution();
+  const { data: loanStatuses = [] } = useLoanStatusDistribution();
+  const { data: appliedLoans = [] } = useLoans('applied');
 
   const formatCurrency = (amount: number) => {
     if (amount >= 1000000) {
@@ -54,6 +45,40 @@ export default function AdminDashboard() {
 
   const formatFullCurrency = (amount: number) => 
     `K${amount.toLocaleString()}`;
+
+  const formatDate = (date: string) => 
+    new Date(date).toLocaleDateString('en-MW', { 
+      day: 'numeric', 
+      month: 'short', 
+      year: 'numeric' 
+    });
+
+  // Static chart data for now (would need separate time-series queries)
+  const disbursements = [
+    { month: 'Jul', amount: 125000 },
+    { month: 'Aug', amount: 180000 },
+    { month: 'Sep', amount: 155000 },
+    { month: 'Oct', amount: 210000 },
+    { month: 'Nov', amount: 195000 },
+    { month: 'Dec', amount: 230000 },
+  ];
+
+  const collections = [
+    { month: 'Jul', collected: 45000, expected: 50000 },
+    { month: 'Aug', collected: 62000, expected: 65000 },
+    { month: 'Sep', collected: 58000, expected: 60000 },
+    { month: 'Oct', collected: 71000, expected: 75000 },
+    { month: 'Nov', collected: 68000, expected: 72000 },
+    { month: 'Dec', collected: 82000, expected: 85000 },
+  ];
+
+  if (statsLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -69,7 +94,7 @@ export default function AdminDashboard() {
           <Button variant="outline" size="sm" className="h-10 sm:h-9" asChild>
             <Link to="/admin/applications">
               <ClipboardList className="mr-2 h-4 w-4" />
-              {pendingApps.length} Pending
+              {stats?.pendingApplications || 0} Pending
             </Link>
           </Button>
           <Button variant="accent" size="sm" className="h-10 sm:h-9" asChild>
@@ -84,26 +109,26 @@ export default function AdminDashboard() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Disbursed"
-          value={formatCurrency(stats.totalDisbursed)}
+          value={formatCurrency(stats?.totalDisbursed || 0)}
           icon={<Wallet className="h-5 w-5" />}
           trend={{ value: 12, label: 'vs last month' }}
           variant="primary"
         />
         <StatCard
           title="Outstanding Balance"
-          value={formatCurrency(stats.outstandingBalance)}
-          subtitle={`${stats.activeLoansCount} active loans`}
+          value={formatCurrency(stats?.outstandingBalance || 0)}
+          subtitle={`${stats?.activeLoansCount || 0} active loans`}
           icon={<TrendingUp className="h-5 w-5" />}
         />
         <StatCard
           title="Overdue Loans"
-          value={stats.overdueCount}
-          subtitle={formatFullCurrency(stats.overdueAmount)}
+          value={stats?.overdueCount || 0}
+          subtitle={formatFullCurrency(stats?.overdueAmount || 0)}
           icon={<AlertTriangle className="h-5 w-5" />}
         />
         <StatCard
           title="Collection Rate"
-          value={`${stats.collectionRate}%`}
+          value={`${stats?.collectionRate || 0}%`}
           icon={<Percent className="h-5 w-5" />}
           trend={{ value: 3.2, label: 'vs last month' }}
           variant="accent"
@@ -287,19 +312,21 @@ export default function AdminDashboard() {
             </Button>
           </div>
           <div className="space-y-2 sm:space-y-3">
-            {pendingApps.slice(0, 3).map((app) => (
+            {appliedLoans.slice(0, 3).map((loan) => (
               <div 
-                key={app.id}
+                key={loan.id}
                 className="flex flex-col gap-2 rounded-lg border border-border p-3 sm:p-4 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="min-w-0">
-                  <p className="font-medium truncate">{app.clientName}</p>
+                  <p className="font-medium truncate">
+                    {loan.clients.first_name} {loan.clients.last_name}
+                  </p>
                   <p className="text-sm text-muted-foreground truncate">
-                    {app.product} · {formatFullCurrency(app.amount)}
+                    {loan.loan_products.name} · {formatFullCurrency(Number(loan.principal_amount))}
                   </p>
                 </div>
                 <div className="flex items-center justify-between sm:flex-col sm:text-right sm:items-end gap-1">
-                  <p className="text-xs sm:text-sm text-muted-foreground">{app.appliedDate}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{formatDate(loan.applied_at)}</p>
                   <Link 
                     to="/admin/applications" 
                     className="text-sm font-medium text-accent hover:underline"
@@ -309,7 +336,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
             ))}
-            {pendingApps.length === 0 && (
+            {appliedLoans.length === 0 && (
               <p className="text-center py-8 text-muted-foreground">
                 No pending applications
               </p>
