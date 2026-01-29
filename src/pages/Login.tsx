@@ -1,18 +1,19 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Wallet, Users, Shield } from 'lucide-react';
+import { Wallet, Shield, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAuth, UserRole } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const [isSignUp, setIsSignUp] = useState(false);
+  const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -20,21 +21,55 @@ export default function Login() {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 800));
+    try {
+      if (isSignUp) {
+        if (!name.trim()) {
+          toast({
+            title: 'Name required',
+            description: 'Please enter your name',
+            variant: 'destructive',
+          });
+          setIsLoading(false);
+          return;
+        }
 
-    const success = login(email, password, 'admin');
-    
-    if (success) {
+        const { error } = await signUp(email, password, name);
+        
+        if (error) {
+          toast({
+            title: 'Sign up failed',
+            description: error.message,
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Account created!',
+            description: 'You can now sign in with your credentials',
+          });
+          setIsSignUp(false);
+          setName('');
+        }
+      } else {
+        const { error } = await signIn(email, password);
+        
+        if (error) {
+          toast({
+            title: 'Login failed',
+            description: error.message,
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Welcome back!',
+            description: 'Signed in successfully',
+          });
+          navigate('/admin');
+        }
+      }
+    } catch (err) {
       toast({
-        title: 'Welcome back!',
-        description: 'Signed in as Admin',
-      });
-      navigate('/admin');
-    } else {
-      toast({
-        title: 'Login failed',
-        description: 'Please check your credentials',
+        title: 'Error',
+        description: 'An unexpected error occurred',
         variant: 'destructive',
       });
     }
@@ -68,12 +103,6 @@ export default function Login() {
               </div>
               <span>Secure & reliable platform</span>
             </div>
-            <div className="flex items-center gap-4 text-primary-foreground/90">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10">
-                <Users className="h-5 w-5" />
-              </div>
-              <span>Multi-role access control</span>
-            </div>
           </div>
         </div>
         
@@ -93,9 +122,11 @@ export default function Login() {
           </div>
 
           <div className="text-center lg:text-left">
-            <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>
+            <h2 className="text-2xl font-bold tracking-tight">
+              {isSignUp ? 'Create an account' : 'Welcome back'}
+            </h2>
             <p className="mt-2 text-muted-foreground">
-              Sign in to access your dashboard
+              {isSignUp ? 'Sign up to get started' : 'Sign in to access your dashboard'}
             </p>
             <p className="mt-1 text-sm text-accent font-medium">
               Admin access only
@@ -103,6 +134,21 @@ export default function Login() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {isSignUp && (
+              <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="John Doe"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required={isSignUp}
+                  className="h-11"
+                />
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -125,8 +171,14 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                minLength={6}
                 className="h-11"
               />
+              {isSignUp && (
+                <p className="text-xs text-muted-foreground">
+                  Password must be at least 6 characters
+                </p>
+              )}
             </div>
 
             <Button 
@@ -136,13 +188,31 @@ export default function Login() {
               className="w-full"
               disabled={isLoading}
             >
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {isSignUp ? 'Creating account...' : 'Signing in...'}
+                </>
+              ) : (
+                isSignUp ? 'Create Account' : 'Sign In'
+              )}
             </Button>
           </form>
 
-          <p className="text-center text-sm text-muted-foreground">
-            Demo: Use any email and password (4+ chars)
-          </p>
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setName('');
+              }}
+              className="text-sm text-accent hover:underline"
+            >
+              {isSignUp 
+                ? 'Already have an account? Sign in' 
+                : "Don't have an account? Sign up"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

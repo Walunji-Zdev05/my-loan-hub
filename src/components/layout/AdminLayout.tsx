@@ -55,15 +55,23 @@ const notifications = [
 ];
 
 export function AdminLayout() {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, isLoading, signOut } = useAuth();
   const unreadCount = notifications.filter(n => n.unread).length;
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
   if (user?.role !== 'admin') {
-    return <Navigate to={`/${user?.role}`} replace />;
+    return <Navigate to="/login" replace />;
   }
 
   return (
@@ -170,7 +178,7 @@ export function AdminLayout() {
                   Settings
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout} className="text-destructive">
+                <DropdownMenuItem onClick={signOut} className="text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign Out
                 </DropdownMenuItem>
