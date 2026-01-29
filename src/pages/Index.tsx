@@ -9,7 +9,7 @@ const Index = () => {
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      navigate(`/${user.role}`);
+      navigate('/admin');
     }
   }, [isAuthenticated, user, navigate]);
 
