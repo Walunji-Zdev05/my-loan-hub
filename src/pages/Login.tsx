@@ -235,9 +235,14 @@ export default function Login() {
             </button>
           </div>
 
-          <p className="text-center text-xs text-muted-foreground">
-            Note: After signing up, you'll need an admin to assign your role for full access.
-          </p>
+          <div className="text-center space-y-2">
+            <p className="text-xs font-medium text-primary">
+              🔒 Admin access only
+            </p>
+            <p className="text-xs text-muted-foreground">
+              This portal is for administrators. Contact support for access.
+            </p>
+          </div>
         </div>
       </div>
     </div>
