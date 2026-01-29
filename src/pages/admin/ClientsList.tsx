@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Mail, Phone, Plus, Eye, Loader2 } from 'lucide-react';
+import { Search, User, Phone, Mail, Check, AlertCircle, Plus, Eye } from 'lucide-react';
 
 import { DataTable } from '@/components/shared/DataTable';
 import { Input } from '@/components/ui/input';
@@ -11,23 +11,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useClients } from '@/hooks/useClients';
+import { clients, loans, loanApplications, Client } from '@/lib/mockData';
 import { cn } from '@/lib/utils';
-import { Database } from '@/integrations/supabase/types';
-
-type Client = Database['public']['Tables']['clients']['Row'];
 
 export default function ClientsList() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  
-  const { data: clients = [], isLoading } = useClients();
 
   const filteredClients = clients.filter(client => 
-    `${client.first_name} ${client.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    client.client_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (client.id_number && client.id_number.includes(searchQuery))
+    client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    client.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    client.nationalId.includes(searchQuery)
   );
 
   const formatDate = (date: string) => 
@@ -37,12 +32,41 @@ export default function ClientsList() {
       year: 'numeric' 
     });
 
+  const formatCurrency = (amount: number) => 
+    `K${amount.toLocaleString()}`;
+
+  const getClientLoans = (clientId: string) => 
+    loans.filter(l => l.clientId === clientId);
+
+  const getClientApplications = (clientId: string) =>
+    loanApplications.filter(a => a.clientId === clientId);
+
+  const FeeStatusBadge = ({ paid, label, amount, paidDate }: { paid: boolean; label: string; amount: number; paidDate?: string }) => (
+    <div className={cn(
+      'flex items-center justify-between p-2 rounded-lg text-sm',
+      paid ? 'bg-success/10' : 'bg-muted'
+    )}>
+      <div className="flex items-center gap-2">
+        {paid ? (
+          <Check className="h-4 w-4 text-success" />
+        ) : (
+          <AlertCircle className="h-4 w-4 text-muted-foreground" />
+        )}
+        <span className={paid ? 'text-success' : 'text-muted-foreground'}>{label}</span>
+      </div>
+      <div className="text-right">
+        <p className="font-medium">{formatCurrency(amount)}</p>
+        {paidDate && <p className="text-xs text-muted-foreground">Paid: {formatDate(paidDate)}</p>}
+      </div>
+    </div>
+  );
+
   const columns = [
     {
-      key: 'client_number',
+      key: 'id',
       header: 'Client ID',
       cell: (client: Client) => (
-        <span className="font-medium">{client.client_number}</span>
+        <span className="font-medium">{client.id}</span>
       ),
     },
     {
@@ -51,36 +75,33 @@ export default function ClientsList() {
       cell: (client: Client) => (
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-medium">
-            {client.first_name.charAt(0)}
+            {client.name.charAt(0)}
           </div>
-          {client.first_name} {client.last_name}
+          {client.name}
         </div>
       ),
     },
     {
-      key: 'id_number',
+      key: 'nationalId',
       header: 'National ID',
-      cell: (client: Client) => client.id_number || '-',
-      hideOnMobile: true,
+      cell: (client: Client) => client.nationalId,
     },
     {
       key: 'phone',
       header: 'Phone',
-      cell: (client: Client) => client.phone || '-',
-      hideOnMobile: true,
+      cell: (client: Client) => client.phone,
     },
     {
-      key: 'status',
-      header: 'Status',
+      key: 'totalLoans',
+      header: 'Total Loans',
+      cell: (client: Client) => client.totalLoans,
+    },
+    {
+      key: 'activeLoans',
+      header: 'Active',
       cell: (client: Client) => (
-        <span className={cn(
-          'inline-flex px-2 py-0.5 rounded-full text-xs font-medium',
-          client.status === 'active' && 'bg-success/10 text-success',
-          client.status === 'pending' && 'bg-warning/10 text-warning',
-          client.status === 'approved' && 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-          client.status === 'rejected' && 'bg-destructive/10 text-destructive'
-        )}>
-          {client.status.charAt(0).toUpperCase() + client.status.slice(1)}
+        <span className={client.activeLoans > 0 ? 'text-accent font-medium' : 'text-muted-foreground'}>
+          {client.activeLoans}
         </span>
       ),
     },
@@ -108,14 +129,6 @@ export default function ClientsList() {
       ),
     },
   ];
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -161,14 +174,12 @@ export default function ClientsList() {
               {/* Client Info */}
               <div className="flex items-center gap-4">
                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground text-xl font-semibold">
-                  {selectedClient.first_name.charAt(0)}
+                  {selectedClient.name.charAt(0)}
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold">
-                    {selectedClient.first_name} {selectedClient.last_name}
-                  </h3>
+                  <h3 className="text-lg font-semibold">{selectedClient.name}</h3>
                   <p className="text-sm text-muted-foreground">
-                    ID: {selectedClient.client_number} · NID: {selectedClient.id_number || 'N/A'}
+                    ID: {selectedClient.id} · NID: {selectedClient.nationalId}
                   </p>
                 </div>
               </div>
@@ -177,42 +188,91 @@ export default function ClientsList() {
               <div className="grid gap-3 rounded-lg bg-muted/50 p-4">
                 <div className="flex items-center gap-3">
                   <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span>{selectedClient.email || 'No email'}</span>
+                  <span>{selectedClient.email}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span>{selectedClient.phone || 'No phone'}</span>
+                  <span>{selectedClient.phone}</span>
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  Member since {formatDate(selectedClient.created_at)}
+                <div className="flex items-center gap-3">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  <span>Member since {formatDate(selectedClient.joinDate)}</span>
                 </div>
               </div>
 
-              {/* Additional Info */}
-              <div className="space-y-2">
-                <h4 className="font-medium">Additional Information</h4>
-                <div className="grid gap-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Occupation</span>
-                    <span>{selectedClient.occupation || 'N/A'}</span>
+              {/* Fee Status from Applications */}
+              {getClientApplications(selectedClient.id).length > 0 && (
+                <div>
+                  <h4 className="font-medium mb-3">Application Fee Status</h4>
+                  <div className="space-y-3">
+                    {getClientApplications(selectedClient.id).map(app => (
+                      <div key={app.id} className="border border-border rounded-lg p-3 space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">{app.id} - {app.product}</span>
+                          <span className={cn(
+                            'text-xs px-2 py-0.5 rounded-full',
+                            app.status === 'pending' && 'bg-warning/10 text-warning',
+                            app.status === 'approved' && 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+                            app.status === 'rejected' && 'bg-destructive/10 text-destructive',
+                            app.status === 'disbursed' && 'bg-success/10 text-success'
+                          )}>
+                            {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                          </span>
+                        </div>
+                        <div className="text-sm text-muted-foreground mb-2">
+                          Amount: {formatCurrency(app.amount)} · Applied: {formatDate(app.appliedDate)}
+                        </div>
+                        <div className="grid gap-2">
+                          <FeeStatusBadge 
+                            paid={app.applicationFeePaid} 
+                            label="Application Fee" 
+                            amount={app.applicationFeeAmount}
+                            paidDate={app.applicationFeePaidDate}
+                          />
+                          <FeeStatusBadge 
+                            paid={app.approvalFeePaid} 
+                            label="Approval Fee" 
+                            amount={app.approvalFeeAmount}
+                            paidDate={app.approvalFeePaidDate}
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Employer</span>
-                    <span>{selectedClient.employer || 'N/A'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Monthly Income</span>
-                    <span>
-                      {selectedClient.monthly_income 
-                        ? `K${Number(selectedClient.monthly_income).toLocaleString()}`
-                        : 'N/A'
-                      }
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Address</span>
-                    <span>{selectedClient.address || 'N/A'}</span>
-                  </div>
+                </div>
+              )}
+
+              {/* Loans Summary */}
+              <div>
+                <h4 className="font-medium mb-3">Loan History</h4>
+                <div className="space-y-2">
+                  {getClientLoans(selectedClient.id).length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No loan history</p>
+                  ) : (
+                    getClientLoans(selectedClient.id).map(loan => (
+                      <div 
+                        key={loan.id}
+                        className="flex items-center justify-between rounded-lg border border-border p-3"
+                      >
+                        <div>
+                          <p className="font-medium">{loan.product}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {loan.id} · {formatDate(loan.disbursedDate)}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium">{formatCurrency(loan.amount)}</p>
+                          <p className={`text-sm ${
+                            loan.status === 'paid' ? 'text-success' : 
+                            loan.status === 'overdue' ? 'text-destructive' : 
+                            'text-warning'
+                          }`}>
+                            {loan.status.charAt(0).toUpperCase() + loan.status.slice(1)}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>

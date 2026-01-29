@@ -1,113 +1,47 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Wallet, Users, Shield, Loader2 } from 'lucide-react';
+import { Wallet, Users, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
+import { useAuth, UserRole } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { z } from 'zod';
-
-const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-});
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<UserRole>('borrower');
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
-  
-  const { signIn, signUp, isAuthenticated, isAdmin, isLoading: authLoading } = useSupabaseAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (!authLoading && isAuthenticated) {
-      navigate(isAdmin ? '/admin' : '/borrower');
-    }
-  }, [isAuthenticated, isAdmin, authLoading, navigate]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrors({});
-
-    // Validate input
-    const result = loginSchema.safeParse({ email, password });
-    if (!result.success) {
-      const fieldErrors: { email?: string; password?: string } = {};
-      result.error.errors.forEach(err => {
-        if (err.path[0] === 'email') fieldErrors.email = err.message;
-        if (err.path[0] === 'password') fieldErrors.password = err.message;
-      });
-      setErrors(fieldErrors);
-      return;
-    }
-
     setIsLoading(true);
 
-    try {
-      if (isSignUp) {
-        const { error } = await signUp(email, password);
-        if (error) {
-          if (error.message.includes('already registered')) {
-            toast({
-              title: 'Account exists',
-              description: 'This email is already registered. Please sign in instead.',
-              variant: 'destructive',
-            });
-          } else {
-            toast({
-              title: 'Sign up failed',
-              description: error.message,
-              variant: 'destructive',
-            });
-          }
-        } else {
-          toast({
-            title: 'Account created!',
-            description: 'You can now sign in with your credentials.',
-          });
-          setIsSignUp(false);
-        }
-      } else {
-        const { error } = await signIn(email, password);
-        if (error) {
-          toast({
-            title: 'Sign in failed',
-            description: error.message === 'Invalid login credentials' 
-              ? 'Invalid email or password. Please try again.'
-              : error.message,
-            variant: 'destructive',
-          });
-        } else {
-          toast({
-            title: 'Welcome back!',
-            description: 'Signed in successfully',
-          });
-        }
-      }
-    } catch (error) {
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    const success = login(email, password, selectedRole);
+    
+    if (success) {
       toast({
-        title: 'Error',
-        description: 'An unexpected error occurred',
+        title: 'Welcome back!',
+        description: `Signed in as ${selectedRole}`,
+      });
+      navigate(`/${selectedRole}`);
+    } else {
+      toast({
+        title: 'Login failed',
+        description: 'Please check your credentials',
         variant: 'destructive',
       });
-    } finally {
-      setIsLoading(false);
     }
+    
+    setIsLoading(false);
   };
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -160,15 +94,56 @@ export default function Login() {
           </div>
 
           <div className="text-center lg:text-left">
-            <h2 className="text-2xl font-bold tracking-tight">
-              {isSignUp ? 'Create an account' : 'Welcome back'}
-            </h2>
+            <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>
             <p className="mt-2 text-muted-foreground">
-              {isSignUp 
-                ? 'Sign up to get started with LoanPro'
-                : 'Sign in to access your dashboard'
-              }
+              Sign in to access your dashboard
             </p>
+          </div>
+
+          {/* Role selector */}
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setSelectedRole('borrower')}
+              className={cn(
+                'flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all',
+                selectedRole === 'borrower'
+                  ? 'border-accent bg-accent/5'
+                  : 'border-border hover:border-accent/50'
+              )}
+            >
+              <Users className={cn(
+                'h-6 w-6',
+                selectedRole === 'borrower' ? 'text-accent' : 'text-muted-foreground'
+              )} />
+              <span className={cn(
+                'text-sm font-medium',
+                selectedRole === 'borrower' ? 'text-accent' : 'text-muted-foreground'
+              )}>
+                Borrower
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedRole('admin')}
+              className={cn(
+                'flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all',
+                selectedRole === 'admin'
+                  ? 'border-accent bg-accent/5'
+                  : 'border-border hover:border-accent/50'
+              )}
+            >
+              <Shield className={cn(
+                'h-6 w-6',
+                selectedRole === 'admin' ? 'text-accent' : 'text-muted-foreground'
+              )} />
+              <span className={cn(
+                'text-sm font-medium',
+                selectedRole === 'admin' ? 'text-accent' : 'text-muted-foreground'
+              )}>
+                Admin
+              </span>
+            </button>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -181,11 +156,8 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className={cn("h-11", errors.email && "border-destructive")}
+                className="h-11"
               />
-              {errors.email && (
-                <p className="text-sm text-destructive">{errors.email}</p>
-              )}
             </div>
 
             <div className="space-y-2">
@@ -197,11 +169,8 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className={cn("h-11", errors.password && "border-destructive")}
+                className="h-11"
               />
-              {errors.password && (
-                <p className="text-sm text-destructive">{errors.password}</p>
-              )}
             </div>
 
             <Button 
@@ -211,38 +180,13 @@ export default function Login() {
               className="w-full"
               disabled={isLoading}
             >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {isSignUp ? 'Creating account...' : 'Signing in...'}
-                </>
-              ) : (
-                isSignUp ? 'Create Account' : 'Sign In'
-              )}
+              {isLoading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
 
-          <div className="text-center">
-            <button
-              type="button"
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-sm text-muted-foreground hover:text-accent transition-colors"
-            >
-              {isSignUp 
-                ? 'Already have an account? Sign in'
-                : "Don't have an account? Sign up"
-              }
-            </button>
-          </div>
-
-          <div className="text-center space-y-2">
-            <p className="text-xs font-medium text-primary">
-              🔒 Admin access only
-            </p>
-            <p className="text-xs text-muted-foreground">
-              This portal is for administrators. Contact support for access.
-            </p>
-          </div>
+          <p className="text-center text-sm text-muted-foreground">
+            Demo: Use any email and password (4+ chars)
+          </p>
         </div>
       </div>
     </div>

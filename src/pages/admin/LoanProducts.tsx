@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Edit2, Package, Loader2 } from 'lucide-react';
+import { Plus, Edit2, Package } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,33 +21,25 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useLoanProducts, useCreateLoanProduct, useUpdateLoanProduct } from '@/hooks/useLoanProducts';
-import { Database } from '@/integrations/supabase/types';
-
-type LoanProduct = Database['public']['Tables']['loan_products']['Row'];
-type InterestType = Database['public']['Enums']['interest_type'];
+import { loanProducts, LoanProduct } from '@/lib/mockData';
 
 export default function LoanProducts() {
   const { toast } = useToast();
-  const { data: products = [], isLoading } = useLoanProducts();
-  const createProduct = useCreateLoanProduct();
-  const updateProduct = useUpdateLoanProduct();
-  
+  const [products, setProducts] = useState(loanProducts);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<LoanProduct | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    min_amount: '',
-    max_amount: '',
-    interest_rate: '',
-    interest_type: 'flat_rate' as InterestType,
-    min_term_months: '',
-    max_term_months: '',
-    is_active: true,
-    application_fee: '',
-    approval_fee: '',
-    penalty_rate: '',
+    minAmount: '',
+    maxAmount: '',
+    interestRate: '',
+    interestType: 'flat' as 'flat' | 'reducing',
+    maxTerm: '',
+    termUnit: 'months' as 'months' | 'weeks',
+    isActive: true,
+    applicationFeeAmount: '',
+    approvalFeeAmount: '',
   });
 
   const formatCurrency = (amount: number) => 
@@ -58,96 +50,72 @@ export default function LoanProducts() {
       setEditingProduct(product);
       setFormData({
         name: product.name,
-        description: product.description || '',
-        min_amount: product.min_amount.toString(),
-        max_amount: product.max_amount.toString(),
-        interest_rate: product.interest_rate.toString(),
-        interest_type: product.interest_type,
-        min_term_months: product.min_term_months.toString(),
-        max_term_months: product.max_term_months.toString(),
-        is_active: product.is_active,
-        application_fee: product.application_fee.toString(),
-        approval_fee: product.approval_fee.toString(),
-        penalty_rate: product.penalty_rate.toString(),
+        description: product.description,
+        minAmount: product.minAmount.toString(),
+        maxAmount: product.maxAmount.toString(),
+        interestRate: product.interestRate.toString(),
+        interestType: product.interestType || 'flat',
+        maxTerm: product.maxTerm.toString(),
+        termUnit: product.termUnit,
+        isActive: product.isActive,
+        applicationFeeAmount: product.applicationFeeAmount.toString(),
+        approvalFeeAmount: product.approvalFeeAmount.toString(),
       });
     } else {
       setEditingProduct(null);
       setFormData({
         name: '',
         description: '',
-        min_amount: '',
-        max_amount: '',
-        interest_rate: '',
-        interest_type: 'flat_rate',
-        min_term_months: '1',
-        max_term_months: '',
-        is_active: true,
-        application_fee: '0',
-        approval_fee: '0',
-        penalty_rate: '0',
+        minAmount: '',
+        maxAmount: '',
+        interestRate: '',
+        interestType: 'flat',
+        maxTerm: '',
+        termUnit: 'months',
+        isActive: true,
+        applicationFeeAmount: '',
+        approvalFeeAmount: '',
       });
     }
     setIsModalOpen(true);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const productData = {
+    const productData: LoanProduct = {
+      id: editingProduct?.id || `PR${(products.length + 1).toString().padStart(3, '0')}`,
       name: formData.name,
-      description: formData.description || null,
-      min_amount: parseFloat(formData.min_amount),
-      max_amount: parseFloat(formData.max_amount),
-      interest_rate: parseFloat(formData.interest_rate),
-      interest_type: formData.interest_type,
-      min_term_months: parseInt(formData.min_term_months) || 1,
-      max_term_months: parseInt(formData.max_term_months),
-      is_active: formData.is_active,
-      application_fee: parseFloat(formData.application_fee) || 0,
-      approval_fee: parseFloat(formData.approval_fee) || 0,
-      penalty_rate: parseFloat(formData.penalty_rate) || 0,
+      description: formData.description,
+      minAmount: parseFloat(formData.minAmount),
+      maxAmount: parseFloat(formData.maxAmount),
+      interestRate: parseFloat(formData.interestRate),
+      interestType: formData.interestType,
+      maxTerm: parseInt(formData.maxTerm),
+      termUnit: formData.termUnit,
+      isActive: formData.isActive,
+      applicationFeeAmount: parseFloat(formData.applicationFeeAmount) || 0,
+      approvalFeeAmount: parseFloat(formData.approvalFeeAmount) || 0,
     };
 
-    try {
-      if (editingProduct) {
-        await updateProduct.mutateAsync({ id: editingProduct.id, ...productData });
-        toast({ title: 'Product Updated', description: `${productData.name} has been updated.` });
-      } else {
-        await createProduct.mutateAsync(productData);
-        toast({ title: 'Product Created', description: `${productData.name} has been created.` });
-      }
-      setIsModalOpen(false);
-    } catch (error: any) {
-      toast({ 
-        title: 'Error', 
-        description: error.message || 'Failed to save product',
-        variant: 'destructive',
-      });
+    if (editingProduct) {
+      setProducts(prev => prev.map(p => p.id === editingProduct.id ? productData : p));
+      toast({ title: 'Product Updated', description: `${productData.name} has been updated.` });
+    } else {
+      setProducts(prev => [...prev, productData]);
+      toast({ title: 'Product Created', description: `${productData.name} has been created.` });
     }
+
+    setIsModalOpen(false);
   };
 
-  const toggleStatus = async (product: LoanProduct) => {
-    try {
-      await updateProduct.mutateAsync({ 
-        id: product.id, 
-        is_active: !product.is_active 
-      });
-    } catch (error: any) {
-      toast({ 
-        title: 'Error', 
-        description: error.message || 'Failed to update status',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+  const toggleStatus = (productId: string) => {
+    setProducts(prev => 
+      prev.map(p => 
+        p.id === productId ? { ...p, isActive: !p.isActive } : p
+      )
     );
-  }
+  };
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -170,7 +138,7 @@ export default function LoanProducts() {
           <div 
             key={product.id}
             className={`rounded-xl border bg-card p-4 sm:p-6 transition-all ${
-              product.is_active ? 'border-border' : 'border-dashed opacity-60'
+              product.isActive ? 'border-border' : 'border-dashed opacity-60'
             }`}
           >
             <div className="flex items-start justify-between mb-3 sm:mb-4">
@@ -179,8 +147,8 @@ export default function LoanProducts() {
               </div>
               <div className="flex items-center gap-1 sm:gap-2">
                 <Switch 
-                  checked={product.is_active}
-                  onCheckedChange={() => toggleStatus(product)}
+                  checked={product.isActive}
+                  onCheckedChange={() => toggleStatus(product.id)}
                 />
                 <Button 
                   variant="ghost" 
@@ -195,56 +163,51 @@ export default function LoanProducts() {
 
             <h3 className="font-semibold text-base sm:text-lg">{product.name}</h3>
             <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-              {product.description || 'No description'}
+              {product.description}
             </p>
 
             <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-border space-y-1.5 sm:space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Amount Range</span>
                 <span className="font-medium">
-                  {formatCurrency(Number(product.min_amount))} - {formatCurrency(Number(product.max_amount))}
+                  {formatCurrency(product.minAmount)} - {formatCurrency(product.maxAmount)}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Interest Rate</span>
-                <span className="font-medium text-accent">{product.interest_rate}% p.a.</span>
+                <span className="font-medium text-accent">{product.interestRate}% p.a.</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Interest Type</span>
                 <span className="font-medium">
-                  {product.interest_type === 'reducing_balance' ? 'Reducing Balance' : 'Flat Rate'}
+                  {product.interestType === 'reducing' ? 'Reducing Balance' : 'Flat Rate'}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Term</span>
-                <span className="font-medium">{product.min_term_months} - {product.max_term_months} months</span>
+                <span className="text-muted-foreground">Max Term</span>
+                <span className="font-medium">{product.maxTerm} {product.termUnit}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Application Fee</span>
-                <span className="font-medium">{formatCurrency(Number(product.application_fee))}</span>
+                <span className="font-medium">{formatCurrency(product.applicationFeeAmount)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Approval Fee</span>
-                <span className="font-medium">{formatCurrency(Number(product.approval_fee))}</span>
+                <span className="font-medium">{formatCurrency(product.approvalFeeAmount)}</span>
               </div>
             </div>
 
             <div className="mt-4">
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                product.is_active 
+                product.isActive 
                   ? 'bg-success/10 text-success' 
                   : 'bg-muted text-muted-foreground'
               }`}>
-                {product.is_active ? 'Active' : 'Inactive'}
+                {product.isActive ? 'Active' : 'Inactive'}
               </span>
             </div>
           </div>
         ))}
-        {products.length === 0 && (
-          <div className="col-span-full text-center py-12 text-muted-foreground">
-            No loan products yet. Click "Add Product" to create one.
-          </div>
-        )}
       </div>
 
       {/* Add/Edit Modal */}
@@ -280,22 +243,22 @@ export default function LoanProducts() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="min_amount">Min Amount (K)</Label>
+                <Label htmlFor="minAmount">Min Amount (K)</Label>
                 <Input
-                  id="min_amount"
+                  id="minAmount"
                   type="number"
-                  value={formData.min_amount}
-                  onChange={(e) => setFormData({ ...formData, min_amount: e.target.value })}
+                  value={formData.minAmount}
+                  onChange={(e) => setFormData({ ...formData, minAmount: e.target.value })}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="max_amount">Max Amount (K)</Label>
+                <Label htmlFor="maxAmount">Max Amount (K)</Label>
                 <Input
-                  id="max_amount"
+                  id="maxAmount"
                   type="number"
-                  value={formData.max_amount}
-                  onChange={(e) => setFormData({ ...formData, max_amount: e.target.value })}
+                  value={formData.maxAmount}
+                  onChange={(e) => setFormData({ ...formData, maxAmount: e.target.value })}
                   required
                 />
               </div>
@@ -303,28 +266,28 @@ export default function LoanProducts() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="interest_rate">Interest Rate (%)</Label>
+                <Label htmlFor="interestRate">Interest Rate (%)</Label>
                 <Input
-                  id="interest_rate"
+                  id="interestRate"
                   type="number"
                   step="0.1"
-                  value={formData.interest_rate}
-                  onChange={(e) => setFormData({ ...formData, interest_rate: e.target.value })}
+                  value={formData.interestRate}
+                  onChange={(e) => setFormData({ ...formData, interestRate: e.target.value })}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="interest_type">Interest Type</Label>
+                <Label htmlFor="interestType">Interest Type</Label>
                 <Select 
-                  value={formData.interest_type} 
-                  onValueChange={(value: InterestType) => setFormData({ ...formData, interest_type: value })}
+                  value={formData.interestType} 
+                  onValueChange={(value: 'flat' | 'reducing') => setFormData({ ...formData, interestType: value })}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="flat_rate">Flat Rate</SelectItem>
-                    <SelectItem value="reducing_balance">Reducing Balance</SelectItem>
+                    <SelectItem value="flat">Flat Rate</SelectItem>
+                    <SelectItem value="reducing">Reducing Balance</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -332,45 +295,50 @@ export default function LoanProducts() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="min_term_months">Min Term (Months)</Label>
+                <Label htmlFor="maxTerm">Max Term</Label>
                 <Input
-                  id="min_term_months"
+                  id="maxTerm"
                   type="number"
-                  value={formData.min_term_months}
-                  onChange={(e) => setFormData({ ...formData, min_term_months: e.target.value })}
+                  value={formData.maxTerm}
+                  onChange={(e) => setFormData({ ...formData, maxTerm: e.target.value })}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="max_term_months">Max Term (Months)</Label>
-                <Input
-                  id="max_term_months"
-                  type="number"
-                  value={formData.max_term_months}
-                  onChange={(e) => setFormData({ ...formData, max_term_months: e.target.value })}
-                  required
-                />
+                <Label htmlFor="termUnit">Term Unit</Label>
+                <Select 
+                  value={formData.termUnit} 
+                  onValueChange={(value: 'months' | 'weeks') => setFormData({ ...formData, termUnit: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="months">Months</SelectItem>
+                    <SelectItem value="weeks">Weeks</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="application_fee">Application Fee (K)</Label>
+                <Label htmlFor="applicationFeeAmount">Application Fee (K)</Label>
                 <Input
-                  id="application_fee"
+                  id="applicationFeeAmount"
                   type="number"
-                  value={formData.application_fee}
-                  onChange={(e) => setFormData({ ...formData, application_fee: e.target.value })}
+                  value={formData.applicationFeeAmount}
+                  onChange={(e) => setFormData({ ...formData, applicationFeeAmount: e.target.value })}
                   placeholder="0"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="approval_fee">Approval Fee (K)</Label>
+                <Label htmlFor="approvalFeeAmount">Approval Fee (K)</Label>
                 <Input
-                  id="approval_fee"
+                  id="approvalFeeAmount"
                   type="number"
-                  value={formData.approval_fee}
-                  onChange={(e) => setFormData({ ...formData, approval_fee: e.target.value })}
+                  value={formData.approvalFeeAmount}
+                  onChange={(e) => setFormData({ ...formData, approvalFeeAmount: e.target.value })}
                   placeholder="0"
                 />
               </div>
@@ -378,30 +346,19 @@ export default function LoanProducts() {
 
             <div className="flex items-center gap-3">
               <Switch 
-                id="is_active"
-                checked={formData.is_active}
-                onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                id="isActive"
+                checked={formData.isActive}
+                onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
               />
-              <Label htmlFor="is_active">Product is active</Label>
+              <Label htmlFor="isActive">Product is active</Label>
             </div>
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
-                variant="accent"
-                disabled={createProduct.isPending || updateProduct.isPending}
-              >
-                {(createProduct.isPending || updateProduct.isPending) ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  editingProduct ? 'Save Changes' : 'Create Product'
-                )}
+              <Button type="submit" variant="accent">
+                {editingProduct ? 'Save Changes' : 'Create Product'}
               </Button>
             </DialogFooter>
           </form>

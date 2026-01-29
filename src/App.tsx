@@ -3,11 +3,17 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { SupabaseAuthProvider } from "./contexts/SupabaseAuthContext";
+import { AuthProvider } from "./contexts/AuthContext";
 
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+
+// Borrower pages
+import BorrowerDashboard from "./pages/borrower/BorrowerDashboard";
+import BorrowerLoans from "./pages/borrower/BorrowerLoans";
+import RepaymentSchedule from "./pages/borrower/RepaymentSchedule";
+import ApplyLoan from "./pages/borrower/ApplyLoan";
 
 // Admin pages
 import { AdminLayout } from "./components/layout/AdminLayout";
@@ -29,7 +35,7 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <SupabaseAuthProvider>
+    <AuthProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -38,7 +44,13 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             
-            {/* Admin Routes */}
+            {/* Borrower Routes */}
+            <Route path="/borrower" element={<BorrowerDashboard />} />
+            <Route path="/borrower/loans" element={<BorrowerLoans />} />
+            <Route path="/borrower/schedule" element={<RepaymentSchedule />} />
+            <Route path="/borrower/apply" element={<ApplyLoan />} />
+            
+            {/* Admin Routes - Nested under AdminLayout */}
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
               <Route path="clients" element={<ClientsList />} />
@@ -59,7 +71,7 @@ const App = () => (
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
-    </SupabaseAuthProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 
