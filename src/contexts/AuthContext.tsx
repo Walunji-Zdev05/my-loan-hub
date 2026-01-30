@@ -39,11 +39,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    // Listen for auth changes - IMPORTANT: no async/await here to prevent deadlock
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       if (session?.user) {
-        await fetchUserRole(session.user);
+        // Defer Supabase calls with setTimeout to prevent deadlock
+        setTimeout(() => {
+          fetchUserRole(session.user);
+        }, 0);
       } else {
         setUser(null);
         setIsLoading(false);
