@@ -10,14 +10,17 @@ import {
   TrendingUp,
   CheckCircle,
   AlertTriangle,
-  Clock
+  Loader2,
+  Briefcase,
+  MapPin
 } from 'lucide-react';
 
 import { DataTable } from '@/components/shared/DataTable';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { clients, loans, payments, loanApplications, generateSchedule } from '@/lib/mockData';
 import { toast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PaymentHistoryItem {
   id: string;
@@ -26,82 +29,144 @@ interface PaymentHistoryItem {
   type: 'principal' | 'interest' | 'penalty' | 'fee';
   paymentStatus: 'on-time' | 'late';
   loanId: string;
-  product: string;
+  loanNumber: string;
 }
 
 export default function ClientProfile() {
   const navigate = useNavigate();
   const { clientId } = useParams<{ clientId: string }>();
-  
-  const client = clients.find(c => c.id === clientId);
-  const clientLoans = loans.filter(l => l.clientId === clientId);
-  const clientApplications = loanApplications.filter(a => a.clientId === clientId);
-  
-  // Build payment history from payments and loan schedules with proper types
+
+  // Fetch client data
+  const { data: client, isLoading: clientLoading } = useQuery({
+    queryKey: ['client', clientId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('id', clientId)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!clientId,
+  });
+
+  // Fetch client's loans
+  const { data: clientLoans = [], isLoading: loansLoading } = useQuery({
+    queryKey: ['client-loans', clientId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('loans')
+        .select('*')
+        .eq('client_id', clientId);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!clientId,
+  });
+
+  // Fetch repayments for client's loans
+  const { data: repayments = [], isLoading: repaymentsLoading } = useQuery({
+    queryKey: ['client-repayments', clientId],
+    queryFn: async () => {
+      if (clientLoans.length === 0) return [];
+      
+      const loanIds = clientLoans.map(l => l.id);
+      const { data, error } = await supabase
+        .from('repayments')
+        .select('*')
+        .in('loan_id', loanIds)
+        .order('paid_at', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: clientLoans.length > 0,
+  });
+
+  // Fetch fee payments for client's loans
+  const { data: feePayments = [] } = useQuery({
+    queryKey: ['client-fee-payments', clientId],
+    queryFn: async () => {
+      if (clientLoans.length === 0) return [];
+      
+      const loanIds = clientLoans.map(l => l.id);
+      const { data, error } = await supabase
+        .from('fees_payments')
+        .select('*')
+        .in('loan_id', loanIds)
+        .order('paid_at', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: clientLoans.length > 0,
+  });
+
+  const isLoading = clientLoading || loansLoading || repaymentsLoading;
+
+  // Build payment history from repayments and fee payments
   const paymentHistory: PaymentHistoryItem[] = [];
   
-  // Add actual payments with breakdown
-  clientLoans.forEach(loan => {
-    const loanPayments = payments.filter(p => p.loanId === loan.id);
-    const schedule = generateSchedule(loan.id);
-    
-    loanPayments.forEach((p, idx) => {
-      // Determine if payment was on-time by checking against schedule
-      const scheduleItem = schedule.find(s => s.paidDate === p.date);
-      const isOnTime = scheduleItem 
-        ? new Date(scheduleItem.paidDate!) <= new Date(scheduleItem.dueDate)
-        : true;
-      
-      // Split payment into principal and interest components (simulated breakdown)
-      const principalRatio = 0.7;
-      const interestRatio = 0.3;
-      
+  // Add repayments
+  repayments.forEach(r => {
+    const loan = clientLoans.find(l => l.id === r.loan_id);
+    if (!loan) return;
+
+    if (r.principal_portion && r.principal_portion > 0) {
       paymentHistory.push({
-        id: `${p.id}-principal`,
-        date: p.date,
-        amount: Math.round(p.amount * principalRatio),
+        id: `${r.id}-principal`,
+        date: r.paid_at,
+        amount: Number(r.principal_portion),
         type: 'principal',
-        paymentStatus: isOnTime ? 'on-time' : 'late',
+        paymentStatus: 'on-time', // Could be calculated based on due date
         loanId: loan.id,
-        product: loan.product,
-      });
-      
-      paymentHistory.push({
-        id: `${p.id}-interest`,
-        date: p.date,
-        amount: Math.round(p.amount * interestRatio),
-        type: 'interest',
-        paymentStatus: isOnTime ? 'on-time' : 'late',
-        loanId: loan.id,
-        product: loan.product,
-      });
-      
-      // Add penalty for late payments
-      if (!isOnTime && idx % 3 === 0) {
-        paymentHistory.push({
-          id: `${p.id}-penalty`,
-          date: p.date,
-          amount: Math.round(p.amount * 0.05),
-          type: 'penalty',
-          paymentStatus: 'late',
-          loanId: loan.id,
-          product: loan.product,
-        });
-      }
-    });
-    
-    // Add fee entries for loan processing
-    if (loanPayments.length > 0) {
-      paymentHistory.push({
-        id: `${loan.id}-fee`,
-        date: loan.disbursedDate,
-        amount: Math.round(loan.amount * 0.02),
-        type: 'fee',
-        paymentStatus: 'on-time',
-        loanId: loan.id,
-        product: loan.product,
+        loanNumber: loan.loan_number,
       });
     }
+
+    if (r.interest_portion && r.interest_portion > 0) {
+      paymentHistory.push({
+        id: `${r.id}-interest`,
+        date: r.paid_at,
+        amount: Number(r.interest_portion),
+        type: 'interest',
+        paymentStatus: 'on-time',
+        loanId: loan.id,
+        loanNumber: loan.loan_number,
+      });
+    }
+
+    // If no breakdown, add as principal
+    if (!r.principal_portion && !r.interest_portion) {
+      paymentHistory.push({
+        id: r.id,
+        date: r.paid_at,
+        amount: Number(r.amount),
+        type: 'principal',
+        paymentStatus: 'on-time',
+        loanId: loan.id,
+        loanNumber: loan.loan_number,
+      });
+    }
+  });
+
+  // Add fee payments
+  feePayments.forEach(f => {
+    const loan = clientLoans.find(l => l.id === f.loan_id);
+    if (!loan) return;
+
+    paymentHistory.push({
+      id: f.id,
+      date: f.paid_at,
+      amount: Number(f.amount),
+      type: f.fee_type === 'penalty' ? 'penalty' : 'fee',
+      paymentStatus: 'on-time',
+      loanId: loan.id,
+      loanNumber: loan.loan_number,
+    });
   });
 
   // Sort by date descending
@@ -119,37 +184,17 @@ export default function ClientProfile() {
 
   // Calculate performance metrics
   const calculateMetrics = () => {
-    let totalPayments = 0;
-    let onTimePayments = 0;
-    let latePayments = 0;
-    let defaultCount = 0;
-
-    clientLoans.forEach(loan => {
-      const schedule = generateSchedule(loan.id);
-      schedule.forEach(item => {
-        if (item.status === 'paid') {
-          totalPayments++;
-          // Check if paid on time (paidDate exists and <= dueDate)
-          if (item.paidDate && new Date(item.paidDate) <= new Date(item.dueDate)) {
-            onTimePayments++;
-          } else {
-            latePayments++;
-          }
-        } else if (item.status === 'overdue') {
-          // Count overdue items as potential defaults (over 90 days)
-          const daysOverdue = Math.floor((new Date().getTime() - new Date(item.dueDate).getTime()) / (1000 * 60 * 60 * 24));
-          if (daysOverdue > 90) {
-            defaultCount++;
-          }
-        }
-      });
-    });
+    const totalPayments = repayments.length;
+    const onTimePayments = totalPayments; // Simplified - would need due date comparison
+    const latePayments = 0;
+    const defaultCount = clientLoans.filter(l => l.status === 'overdue').length;
 
     const repaymentRate = totalPayments > 0 
       ? Math.round((onTimePayments / totalPayments) * 100) 
-      : 0;
+      : 100;
 
-    const totalPaid = paymentHistory.reduce((sum, p) => sum + p.amount, 0);
+    const totalPaid = repayments.reduce((sum, r) => sum + Number(r.amount), 0) +
+                      feePayments.reduce((sum, f) => sum + Number(f.amount), 0);
 
     return {
       totalPayments,
@@ -159,29 +204,30 @@ export default function ClientProfile() {
       totalPaid,
       defaultCount,
       totalLoans: clientLoans.length,
-      activeLoans: clientLoans.filter(l => l.status === 'active' || l.status === 'overdue').length,
+      activeLoans: clientLoans.filter(l => ['active', 'overdue', 'disbursed'].includes(l.status)).length,
       completedLoans: clientLoans.filter(l => l.status === 'paid').length,
-      totalBorrowed: clientLoans.reduce((sum, l) => sum + l.amount, 0),
-      outstandingBalance: clientLoans.reduce((sum, l) => sum + l.outstandingBalance, 0),
+      totalBorrowed: clientLoans.reduce((sum, l) => sum + Number(l.principal_amount), 0),
+      outstandingBalance: clientLoans.reduce((sum, l) => sum + Number(l.outstanding_balance), 0),
     };
   };
 
   const metrics = calculateMetrics();
 
   const exportToExcel = () => {
-    // Create CSV content with requested columns
-    const headers = ['Payment Date', 'Amount', 'Type', 'Status', 'Loan ID', 'Product'];
+    if (!client) return;
+    
+    const clientName = `${client.first_name} ${client.last_name}`;
+    const headers = ['Payment Date', 'Amount', 'Type', 'Status', 'Loan Number'];
     const rows = paymentHistory.map(p => [
       formatDate(p.date),
       p.amount.toString(),
       p.type.charAt(0).toUpperCase() + p.type.slice(1),
       p.paymentStatus === 'on-time' ? 'On-Time' : 'Late',
-      p.loanId,
-      p.product,
+      p.loanNumber,
     ]);
     
     const csvContent = [
-      `Payment History - ${client?.name}`,
+      `Payment History - ${clientName}`,
       `Exported on ${formatDate(new Date().toISOString())}`,
       '',
       `Performance Summary`,
@@ -193,12 +239,11 @@ export default function ClientProfile() {
       ...rows.map(r => r.join(',')),
     ].join('\n');
 
-    // Create download
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     const today = new Date().toISOString().split('T')[0];
-    link.download = `${client?.name.replace(/\s+/g, '_')}_payment_history_${today}.csv`;
+    link.download = `${clientName.replace(/\s+/g, '_')}_payment_history_${today}.csv`;
     link.click();
 
     toast({
@@ -247,16 +292,21 @@ export default function ClientProfile() {
       ),
     },
     {
-      key: 'loanId',
+      key: 'loanNumber',
       header: 'Loan',
       cell: (item: PaymentHistoryItem) => (
-        <div>
-          <p className="font-medium">{item.loanId}</p>
-          <p className="text-sm text-muted-foreground">{item.product}</p>
-        </div>
+        <span className="font-mono text-sm">{item.loanNumber}</span>
       ),
     },
   ];
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   if (!client) {
     return (
@@ -268,6 +318,8 @@ export default function ClientProfile() {
       </div>
     );
   }
+
+  const clientName = `${client.first_name} ${client.last_name}`;
 
   return (
     <div className="space-y-6">
@@ -289,36 +341,68 @@ export default function ClientProfile() {
         <CardContent className="pt-6">
           <div className="flex items-start gap-6">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground text-2xl font-semibold">
-              {client.name.charAt(0)}
+              {client.first_name.charAt(0)}
             </div>
             <div className="flex-1 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="flex items-center gap-3">
                 <User className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="text-sm text-muted-foreground">Name</p>
-                  <p className="font-medium">{client.name}</p>
+                  <p className="font-medium">{clientName}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <Mail className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="text-sm text-muted-foreground">Email</p>
-                  <p className="font-medium">{client.email}</p>
+                  <p className="font-medium">{client.email || 'N/A'}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <Phone className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="text-sm text-muted-foreground">Phone</p>
-                  <p className="font-medium">{client.phone}</p>
+                  <p className="font-medium">{client.phone || 'N/A'}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <Calendar className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="text-sm text-muted-foreground">Member Since</p>
-                  <p className="font-medium">{formatDate(client.joinDate)}</p>
+                  <p className="font-medium">{formatDate(client.created_at)}</p>
                 </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Additional Info */}
+          <div className="mt-6 pt-6 border-t grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="flex items-center gap-3">
+              <Briefcase className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <p className="text-sm text-muted-foreground">Occupation</p>
+                <p className="font-medium">{client.occupation || 'N/A'}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Briefcase className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <p className="text-sm text-muted-foreground">Employer</p>
+                <p className="font-medium">{client.employer || 'N/A'}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <MapPin className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <p className="text-sm text-muted-foreground">Address</p>
+                <p className="font-medium">{client.address || 'N/A'}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <User className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <p className="text-sm text-muted-foreground">Monthly Income</p>
+                <p className="font-medium">{client.monthly_income ? formatCurrency(Number(client.monthly_income)) : 'N/A'}</p>
               </div>
             </div>
           </div>
@@ -376,7 +460,7 @@ export default function ClientProfile() {
                 {metrics.defaultCount}
               </p>
               <p className="text-sm text-muted-foreground mt-1">
-                90+ days overdue
+                Overdue loans
               </p>
             </CardContent>
           </Card>
@@ -415,7 +499,7 @@ export default function ClientProfile() {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Payment History</h2>
-          <Button variant="outline" onClick={exportToExcel}>
+          <Button variant="outline" onClick={exportToExcel} disabled={paymentHistory.length === 0}>
             <Download className="h-4 w-4 mr-2" />
             Export to Excel
           </Button>
