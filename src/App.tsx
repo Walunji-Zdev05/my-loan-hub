@@ -15,6 +15,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import ClientsList from "./pages/admin/ClientsList";
 import CreateClient from "./pages/admin/CreateClient";
 import ClientApproval from "./pages/admin/ClientApproval";
+import PendingClientsApproval from "./pages/admin/PendingClientsApproval";
 import ClientDisbursement from "./pages/admin/ClientDisbursement";
 import ClientProfile from "./pages/admin/ClientProfile";
 import LoanApplications from "./pages/admin/LoanApplications";
@@ -45,6 +46,7 @@ const App = () => (
               <Route path="clients" element={<ClientsList />} />
               <Route path="clients/new" element={<CreateClient />} />
               <Route path="clients/:clientId" element={<ClientProfile />} />
+              <Route path="pending-clients" element={<PendingClientsApproval />} />
               <Route path="approval" element={<ClientApproval />} />
               <Route path="disbursement" element={<ClientDisbursement />} />
               <Route path="applications" element={<LoanApplications />} />

@@ -68,15 +68,15 @@ export default function CreateClient() {
         employer: formData.employer || null,
         monthly_income: formData.monthly_income ? parseFloat(formData.monthly_income) : null,
         notes: formData.notes || null,
-        status: 'active',
+        status: 'pending',
       });
       
       toast({
         title: 'Client Created',
-        description: `${formData.first_name} ${formData.last_name} has been registered successfully`,
+        description: `${formData.first_name} ${formData.last_name} has been registered and is pending approval`,
       });
       
-      navigate('/admin/clients');
+      navigate('/admin/pending-clients');
     } catch (error) {
       toast({
         title: 'Error',

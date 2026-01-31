@@ -75,15 +75,20 @@ export default function ClientsList() {
     {
       key: 'status',
       header: 'Status',
-      cell: (client: Client) => (
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-          client.status === 'active' 
-            ? 'bg-success/10 text-success' 
-            : 'bg-muted text-muted-foreground'
-        }`}>
-          {client.status.charAt(0).toUpperCase() + client.status.slice(1)}
-        </span>
-      ),
+      cell: (client: Client) => {
+        const statusStyles: Record<string, string> = {
+          pending: 'bg-warning/10 text-warning',
+          approved: 'bg-success/10 text-success',
+          active: 'bg-success/10 text-success',
+          rejected: 'bg-destructive/10 text-destructive',
+        };
+        const style = statusStyles[client.status] || 'bg-muted text-muted-foreground';
+        return (
+          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${style}`}>
+            {client.status.charAt(0).toUpperCase() + client.status.slice(1)}
+          </span>
+        );
+      },
     },
     {
       key: 'actions',

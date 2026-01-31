@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 
-type StatusType = 'paid' | 'pending' | 'overdue' | 'active' | 'approved' | 'rejected' | 'completed' | 'failed' | 'disbursed';
+type StatusType = 'paid' | 'pending' | 'overdue' | 'active' | 'approved' | 'rejected' | 'completed' | 'failed' | 'disbursed' | 'applied';
 
 interface StatusBadgeProps {
   status: StatusType;
@@ -13,6 +13,7 @@ const statusStyles: Record<StatusType, string> = {
   approved: 'status-approved',
   active: 'status-paid',
   pending: 'status-pending',
+  applied: 'status-pending',
   overdue: 'status-overdue',
   rejected: 'status-rejected',
   failed: 'status-rejected',
@@ -25,6 +26,7 @@ const statusLabels: Record<StatusType, string> = {
   approved: 'Approved',
   active: 'Active',
   pending: 'Pending',
+  applied: 'Applied',
   overdue: 'Overdue',
   rejected: 'Rejected',
   failed: 'Failed',

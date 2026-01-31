@@ -8,11 +8,13 @@ import {
   Wallet,
   BookOpen,
   UserCheck,
+  UserPlus,
   Send,
   BookOpenCheck,
   AlertTriangle,
   Clock,
-  FilePlus
+  FilePlus,
+  Users2
 } from 'lucide-react';
 import {
   Sidebar,
@@ -37,7 +39,8 @@ const navItems: NavItem[] = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { label: 'Expected Loans', href: '/admin/expected', icon: Clock },
   { label: 'Clients', href: '/admin/clients', icon: Users },
-  { label: 'Client Approval', href: '/admin/approval', icon: UserCheck },
+  { label: 'Pending Clients', href: '/admin/pending-clients', icon: Users2 },
+  { label: 'Loan Approval', href: '/admin/approval', icon: UserCheck },
   { label: 'Disbursement', href: '/admin/disbursement', icon: Send },
   { label: 'New Application', href: '/admin/applications/new', icon: FilePlus },
   { label: 'Applications', href: '/admin/applications', icon: ClipboardList },
