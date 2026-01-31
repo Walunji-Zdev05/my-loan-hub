@@ -19,12 +19,13 @@ import {
 import { StatCard } from '@/components/shared/StatCard';
 import { Button } from '@/components/ui/button';
 import { useLoanStats, useLoans } from '@/hooks/useLoans';
-import { useClients } from '@/hooks/useClients';
+import { useClients, useClientStats } from '@/hooks/useClients';
 
 export default function AdminDashboard() {
   const { data: stats, isLoading: statsLoading } = useLoanStats();
   const { data: pendingLoans, isLoading: loansLoading } = useLoans('applied');
   const { data: clients } = useClients();
+  const { data: clientStats } = useClientStats();
 
   const formatCurrency = (amount: number) => {
     if (amount >= 1000000) {
@@ -208,14 +209,18 @@ export default function AdminDashboard() {
       </div>
 
       {/* Summary Row */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
           <p className="text-sm text-muted-foreground">Total Clients</p>
           <p className="text-2xl font-bold mt-1">{clients?.length || 0}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
-          <p className="text-sm text-muted-foreground">Total Loans</p>
-          <p className="text-2xl font-bold mt-1">{stats?.totalLoansCount || 0}</p>
+          <p className="text-sm text-muted-foreground">Pending Clients</p>
+          <p className="text-2xl font-bold mt-1 text-warning">{clientStats?.pending || 0}</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
+          <p className="text-sm text-muted-foreground">Approved Clients</p>
+          <p className="text-2xl font-bold mt-1 text-success">{clientStats?.approved || 0}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
           <p className="text-sm text-muted-foreground">Paid Off Loans</p>

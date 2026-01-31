@@ -181,9 +181,9 @@ export default function ClientApproval() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Client Approval</h1>
+        <h1 className="text-2xl font-bold">Loan Application Approval</h1>
         <p className="mt-1 text-muted-foreground">
-          Review pending applications and confirm application fee payments
+          Review pending loan applications and confirm application fee payments
         </p>
       </div>
 
