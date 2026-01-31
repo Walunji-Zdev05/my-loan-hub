@@ -12,7 +12,8 @@ import {
   AlertTriangle,
   Loader2,
   Briefcase,
-  MapPin
+  MapPin,
+  Pencil
 } from 'lucide-react';
 
 import { DataTable } from '@/components/shared/DataTable';
@@ -21,6 +22,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { ClientEditDialog } from '@/components/admin/ClientEditDialog';
+import type { Client } from '@/hooks/useClients';
 
 interface PaymentHistoryItem {
   id: string;
@@ -35,6 +38,7 @@ interface PaymentHistoryItem {
 export default function ClientProfile() {
   const navigate = useNavigate();
   const { clientId } = useParams<{ clientId: string }>();
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   // Fetch client data
   const { data: client, isLoading: clientLoading } = useQuery({
@@ -334,7 +338,18 @@ export default function ClientProfile() {
             View detailed client information and performance metrics
           </p>
         </div>
+        <Button onClick={() => setEditDialogOpen(true)}>
+          <Pencil className="h-4 w-4 mr-2" />
+          Edit Client
+        </Button>
       </div>
+
+      {/* Edit Dialog */}
+      <ClientEditDialog
+        client={client as Client}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+      />
 
       {/* Client Info Card */}
       <Card>
