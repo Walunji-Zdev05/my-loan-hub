@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Check, AlertCircle, Eye, DollarSign, Loader2 } from 'lucide-react';
+import { Check, AlertCircle, Eye, DollarSign, Loader2, X } from 'lucide-react';
 
 import { DataTable } from '@/components/shared/DataTable';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -19,8 +20,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useLoans, useUpdateLoan, LoanWithDetails } from '@/hooks/useLoans';
 import { useRecordFeePayment, useLoanFeeStatus, PaymentMethod } from '@/hooks/useFeePayments';
+import { ReceiptUpload } from '@/components/admin/ReceiptUpload';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 
@@ -31,7 +34,11 @@ export default function ClientApproval() {
   
   const [selectedApp, setSelectedApp] = useState<LoanWithDetails | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [rejectNotes, setRejectNotes] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
+  const [feeConfirmed, setFeeConfirmed] = useState(false);
+  const [receiptUploaded, setReceiptUploaded] = useState(false);
 
   const formatDate = (date: string) =>
     new Date(date).toLocaleDateString('en-MW', {
@@ -86,14 +93,18 @@ export default function ClientApproval() {
     }
   };
 
-  const handleReject = async (appId: string) => {
+  const handleReject = async () => {
+    if (!selectedApp) return;
     try {
       await updateLoan.mutateAsync({
-        id: appId,
+        id: selectedApp.id,
         status: 'rejected',
+        notes: rejectNotes ? `Rejection reason: ${rejectNotes}` : undefined,
       });
+      setShowRejectDialog(false);
       setShowDetails(false);
       setSelectedApp(null);
+      setRejectNotes('');
       toast({
         title: 'Application Rejected',
         description: 'The application has been rejected',
@@ -106,6 +117,11 @@ export default function ClientApproval() {
         variant: 'destructive',
       });
     }
+  };
+
+  const resetFeeState = () => {
+    setFeeConfirmed(false);
+    setReceiptUploaded(false);
   };
 
   const columns = [
@@ -274,23 +290,12 @@ export default function ClientApproval() {
                 </div>
               </div>
 
-              {/* Fee Status */}
-              <FeeStatusDetail loanId={selectedApp.id} appFee={Number(selectedApp.loan_products?.application_fee || 0)} />
-
-              {/* Payment Method Selection */}
-              <div className="space-y-2">
-                <Label>Payment Method (for fee confirmation)</Label>
-                <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                    <SelectItem value="mobile_money">Mobile Money</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Fee Confirmation Section */}
+              <ApplicationFeeSection
+                app={selectedApp}
+                paymentMethod={paymentMethod}
+                onPaymentMethodChange={(v) => setPaymentMethod(v as PaymentMethod)}
+              />
             </div>
           )}
           <DialogFooter>
@@ -298,9 +303,48 @@ export default function ClientApproval() {
               app={selectedApp}
               onConfirmFee={() => selectedApp && handleConfirmAppFee(selectedApp)}
               onApprove={() => selectedApp && handleApprove(selectedApp.id)}
-              onReject={() => selectedApp && handleReject(selectedApp.id)}
+              onReject={() => setShowRejectDialog(true)}
               isPending={updateLoan.isPending || recordFee.isPending}
             />
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Dialog */}
+      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reject Loan Application</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to reject the loan application for{' '}
+              <span className="font-medium">
+                {selectedApp?.clients?.first_name} {selectedApp?.clients?.last_name}
+              </span>
+              ?
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="reject_notes">Rejection Reason (Optional)</Label>
+              <Textarea
+                id="reject_notes"
+                placeholder="Enter reason for rejection..."
+                value={rejectNotes}
+                onChange={(e) => setRejectNotes(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRejectDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleReject}
+              disabled={updateLoan.isPending}
+            >
+              Confirm Rejection
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -350,7 +394,65 @@ function ConfirmFeeButton({ app, onConfirm }: { app: LoanWithDetails; onConfirm:
   );
 }
 
-// Component for fee status detail in dialog
+// Application Fee Section with payment method and receipt upload
+function ApplicationFeeSection({
+  app,
+  paymentMethod,
+  onPaymentMethodChange,
+}: {
+  app: LoanWithDetails;
+  paymentMethod: PaymentMethod;
+  onPaymentMethodChange: (value: string) => void;
+}) {
+  const { data: feeStatus } = useLoanFeeStatus(app.id);
+  const appFee = Number(app.loan_products?.application_fee || 0);
+  
+  // Show status if already paid
+  if (feeStatus?.applicationFeePaid) {
+    return (
+      <div className="flex items-center justify-between p-4 rounded-lg bg-success/10">
+        <div className="flex items-center gap-2">
+          <Check className="h-5 w-5 text-success" />
+          <span className="text-success">
+            Application Fee: K{appFee.toLocaleString()} - Paid
+          </span>
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="space-y-4 rounded-lg border p-4">
+      <div className="flex items-center justify-between">
+        <h4 className="font-medium">Confirm Application Fee</h4>
+        <span className="text-sm font-medium text-warning">
+          K{appFee.toLocaleString()}
+        </span>
+      </div>
+      
+      <div className="space-y-2">
+        <Label>Payment Method</Label>
+        <Select value={paymentMethod} onValueChange={onPaymentMethodChange}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="cash">Cash</SelectItem>
+            <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+            <SelectItem value="mobile_money">Mobile Money</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      
+      <ReceiptUpload
+        loanId={app.id}
+        feeType="application_fee"
+      />
+    </div>
+  );
+}
+
+// Component for fee status detail in dialog (kept for backward compatibility)
 function FeeStatusDetail({ loanId, appFee }: { loanId: string; appFee: number }) {
   const { data: feeStatus } = useLoanFeeStatus(loanId);
   

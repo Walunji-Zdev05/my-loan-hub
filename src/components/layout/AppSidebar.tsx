@@ -37,17 +37,20 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-  { label: 'Expected Loans', href: '/admin/expected', icon: Clock },
+  // Client Management
   { label: 'Clients', href: '/admin/clients', icon: Users },
-  { label: 'Pending Clients', href: '/admin/pending-clients', icon: Users2 },
-  { label: 'Loan Approval', href: '/admin/approval', icon: UserCheck },
-  { label: 'Disbursement', href: '/admin/disbursement', icon: Send },
+  { label: 'Client Approval', href: '/admin/pending-clients', icon: Users2 },
+  // Loan Workflow
   { label: 'New Application', href: '/admin/applications/new', icon: FilePlus },
   { label: 'Applications', href: '/admin/applications', icon: ClipboardList },
+  { label: 'Loan Approval', href: '/admin/approval', icon: UserCheck },
+  { label: 'Disbursement', href: '/admin/disbursement', icon: Send },
   { label: 'Record Payment', href: '/admin/payments', icon: CreditCard },
-  { label: 'Loan Products', href: '/admin/products', icon: Package },
+  // Reports & Analytics
   { label: 'Loan Book', href: '/admin/loan-book', icon: BookOpenCheck },
+  { label: 'Expected Loans', href: '/admin/expected', icon: Clock },
   { label: 'Portfolio at Risk', href: '/admin/par', icon: AlertTriangle },
+  { label: 'Loan Products', href: '/admin/products', icon: Package },
   { label: 'Ledger', href: '/admin/ledger', icon: BookOpen },
 ];
 
