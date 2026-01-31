@@ -4,6 +4,7 @@ import { Check, AlertCircle, Eye, DollarSign, Send, Loader2 } from 'lucide-react
 import { DataTable } from '@/components/shared/DataTable';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -21,6 +22,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { useLoans, useUpdateLoan, LoanWithDetails } from '@/hooks/useLoans';
 import { useRecordFeePayment, useLoanFeeStatus, PaymentMethod } from '@/hooks/useFeePayments';
+import { ReceiptUpload } from '@/components/admin/ReceiptUpload';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 
@@ -262,20 +264,12 @@ export default function ClientDisbursement() {
                 approvalFee={Number(selectedApp.loan_products?.approval_fee || 0)}
               />
 
-              {/* Payment Method Selection */}
-              <div className="space-y-2">
-                <Label>Payment Method (for fee confirmation)</Label>
-                <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                    <SelectItem value="mobile_money">Mobile Money</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Receipt Upload for Approval Fee */}
+              <ApprovalFeeSection
+                app={selectedApp}
+                paymentMethod={paymentMethod}
+                onPaymentMethodChange={(v) => setPaymentMethod(v as PaymentMethod)}
+              />
             </div>
           )}
           <DialogFooter>
@@ -380,6 +374,46 @@ function FeeStatusDetail({ loanId, appFee, approvalFee }: { loanId: string; appF
           </span>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Approval Fee Section with payment method and receipt upload
+function ApprovalFeeSection({
+  app,
+  paymentMethod,
+  onPaymentMethodChange,
+}: {
+  app: LoanWithDetails;
+  paymentMethod: PaymentMethod;
+  onPaymentMethodChange: (value: string) => void;
+}) {
+  const { data: feeStatus } = useLoanFeeStatus(app.id);
+  
+  if (feeStatus?.approvalFeePaid) return null;
+  
+  return (
+    <div className="space-y-4 rounded-lg border p-4">
+      <h4 className="font-medium">Confirm Approval Fee</h4>
+      
+      <div className="space-y-2">
+        <Label>Payment Method</Label>
+        <Select value={paymentMethod} onValueChange={onPaymentMethodChange}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="cash">Cash</SelectItem>
+            <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+            <SelectItem value="mobile_money">Mobile Money</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      
+      <ReceiptUpload
+        loanId={app.id}
+        feeType="approval_fee"
+      />
     </div>
   );
 }
