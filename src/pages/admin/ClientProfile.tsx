@@ -13,7 +13,8 @@ import {
   Loader2,
   Briefcase,
   MapPin,
-  Pencil
+  Pencil,
+  FilePlus
 } from 'lucide-react';
 
 import { DataTable } from '@/components/shared/DataTable';
@@ -338,10 +339,18 @@ export default function ClientProfile() {
             View detailed client information and performance metrics
           </p>
         </div>
-        <Button onClick={() => setEditDialogOpen(true)}>
-          <Pencil className="h-4 w-4 mr-2" />
-          Edit Client
-        </Button>
+        <div className="flex gap-2">
+          {client.status === 'approved' && (
+            <Button variant="accent" onClick={() => navigate(`/admin/applications/new?clientId=${client.id}`)}>
+              <FilePlus className="h-4 w-4 mr-2" />
+              Apply for Loan
+            </Button>
+          )}
+          <Button onClick={() => setEditDialogOpen(true)}>
+            <Pencil className="h-4 w-4 mr-2" />
+            Edit Client
+          </Button>
+        </div>
       </div>
 
       {/* Edit Dialog */}

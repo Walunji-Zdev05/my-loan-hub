@@ -224,6 +224,10 @@ export type Database = {
           client_id: string
           created_at: string
           disbursed_at: string | null
+          documents: Json | null
+          guarantor_name: string | null
+          guarantor_phone: string | null
+          guarantor_relationship: string | null
           id: string
           interest_rate: number
           interest_type: Database["public"]["Enums"]["interest_type"]
@@ -235,6 +239,7 @@ export type Database = {
           paid_at: string | null
           principal_amount: number
           product_id: string
+          purpose: string | null
           status: Database["public"]["Enums"]["loan_status"]
           term_months: number
           total_amount: number
@@ -246,6 +251,10 @@ export type Database = {
           client_id: string
           created_at?: string
           disbursed_at?: string | null
+          documents?: Json | null
+          guarantor_name?: string | null
+          guarantor_phone?: string | null
+          guarantor_relationship?: string | null
           id?: string
           interest_rate: number
           interest_type: Database["public"]["Enums"]["interest_type"]
@@ -257,6 +266,7 @@ export type Database = {
           paid_at?: string | null
           principal_amount: number
           product_id: string
+          purpose?: string | null
           status?: Database["public"]["Enums"]["loan_status"]
           term_months: number
           total_amount: number
@@ -268,6 +278,10 @@ export type Database = {
           client_id?: string
           created_at?: string
           disbursed_at?: string | null
+          documents?: Json | null
+          guarantor_name?: string | null
+          guarantor_phone?: string | null
+          guarantor_relationship?: string | null
           id?: string
           interest_rate?: number
           interest_type?: Database["public"]["Enums"]["interest_type"]
@@ -279,6 +293,7 @@ export type Database = {
           paid_at?: string | null
           principal_amount?: number
           product_id?: string
+          purpose?: string | null
           status?: Database["public"]["Enums"]["loan_status"]
           term_months?: number
           total_amount?: number

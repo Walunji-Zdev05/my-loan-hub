@@ -11,7 +11,8 @@ import {
   Send,
   BookOpenCheck,
   AlertTriangle,
-  Clock
+  Clock,
+  FilePlus
 } from 'lucide-react';
 import {
   Sidebar,
@@ -38,6 +39,7 @@ const navItems: NavItem[] = [
   { label: 'Clients', href: '/admin/clients', icon: Users },
   { label: 'Client Approval', href: '/admin/approval', icon: UserCheck },
   { label: 'Disbursement', href: '/admin/disbursement', icon: Send },
+  { label: 'New Application', href: '/admin/applications/new', icon: FilePlus },
   { label: 'Applications', href: '/admin/applications', icon: ClipboardList },
   { label: 'Record Payment', href: '/admin/payments', icon: CreditCard },
   { label: 'Loan Products', href: '/admin/products', icon: Package },
