@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useClientsByStatus, useUpdateClient, useClientStats, Client } from '@/hooks/useClients';
 import { toast } from '@/hooks/use-toast';
+import { sendNotification } from '@/hooks/useNotifications';
 
 export default function PendingClientsApproval() {
   const { data: pendingClients, isLoading } = useClientsByStatus('pending');
@@ -48,6 +49,14 @@ export default function PendingClientsApproval() {
         title: 'Client Approved',
         description: `${client.first_name} ${client.last_name} is now approved and eligible for loans`,
       });
+      
+      // Send approval notification email
+      sendNotification(
+        'client_approved',
+        client.email,
+        `${client.first_name} ${client.last_name}`,
+        { clientNumber: client.client_number }
+      );
     } catch (error) {
       toast({
         title: 'Error',
@@ -68,6 +77,15 @@ export default function PendingClientsApproval() {
       });
       setShowRejectDialog(false);
       setShowDetails(false);
+      
+      // Send rejection notification email
+      sendNotification(
+        'client_rejected',
+        selectedClient.email,
+        `${selectedClient.first_name} ${selectedClient.last_name}`,
+        { rejectionReason: rejectNotes }
+      );
+      
       setSelectedClient(null);
       setRejectNotes('');
       toast({

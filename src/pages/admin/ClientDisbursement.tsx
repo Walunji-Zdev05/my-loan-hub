@@ -4,7 +4,6 @@ import { Check, AlertCircle, Eye, DollarSign, Send, Loader2 } from 'lucide-react
 import { DataTable } from '@/components/shared/DataTable';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -25,6 +24,7 @@ import { useRecordFeePayment, useLoanFeeStatus, PaymentMethod } from '@/hooks/us
 import { ReceiptUpload } from '@/components/admin/ReceiptUpload';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
+import { sendNotification } from '@/hooks/useNotifications';
 
 export default function ClientDisbursement() {
   const { data: applications, isLoading } = useLoans('approved');
@@ -66,10 +66,10 @@ export default function ClientDisbursement() {
     }
   };
 
-  const handleDisburse = async (appId: string) => {
+  const handleDisburse = async (app: LoanWithDetails) => {
     try {
       await updateLoan.mutateAsync({
-        id: appId,
+        id: app.id,
         status: 'disbursed',
         disbursed_at: new Date().toISOString(),
       });
@@ -79,6 +79,19 @@ export default function ClientDisbursement() {
         title: 'Loan Disbursed',
         description: 'The loan has been successfully disbursed to the client',
       });
+      
+      // Send disbursement notification email
+      if (app.clients) {
+        sendNotification(
+          'loan_disbursed',
+          app.clients.email,
+          `${app.clients.first_name} ${app.clients.last_name}`,
+          { 
+            loanNumber: app.loan_number,
+            loanAmount: Number(app.principal_amount)
+          }
+        );
+      }
     } catch (error) {
       toast({
         title: 'Error',
@@ -146,7 +159,7 @@ export default function ClientDisbursement() {
           <ActionButtons 
             app={app} 
             onConfirmFee={() => handleConfirmApprovalFee(app)}
-            onDisburse={() => handleDisburse(app.id)}
+            onDisburse={() => handleDisburse(app)}
           />
         </div>
       ),
@@ -276,7 +289,7 @@ export default function ClientDisbursement() {
             <DisbursementActions 
               app={selectedApp}
               onConfirmFee={() => selectedApp && handleConfirmApprovalFee(selectedApp)}
-              onDisburse={() => selectedApp && handleDisburse(selectedApp.id)}
+              onDisburse={() => selectedApp && handleDisburse(selectedApp)}
               isPending={updateLoan.isPending || recordFee.isPending}
             />
           </DialogFooter>

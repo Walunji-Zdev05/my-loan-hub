@@ -8,7 +8,7 @@ export type LoanUpdate = TablesUpdate<'loans'>;
 export type LoanStatus = Enums<'loan_status'>;
 
 export type LoanWithDetails = Loan & {
-  clients: { first_name: string; last_name: string; client_number: string; id_number: string | null } | null;
+  clients: { first_name: string; last_name: string; client_number: string; id_number: string | null; email: string | null } | null;
   loan_products: { name: string; application_fee: number; approval_fee: number } | null;
 };
 
@@ -20,7 +20,7 @@ export function useLoans(status?: LoanStatus | LoanStatus[]) {
         .from('loans')
         .select(`
           *,
-          clients(first_name, last_name, client_number, id_number),
+          clients(first_name, last_name, client_number, id_number, email),
           loan_products(name, application_fee, approval_fee)
         `)
         .order('created_at', { ascending: false });
