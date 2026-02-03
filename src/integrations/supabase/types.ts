@@ -217,6 +217,59 @@ export type Database = {
         }
         Relationships: []
       }
+      loan_schedule: {
+        Row: {
+          created_at: string
+          due_date: string
+          id: string
+          installment_number: number
+          interest_portion: number
+          loan_id: string
+          paid_amount: number | null
+          paid_at: string | null
+          principal_portion: number
+          status: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          due_date: string
+          id?: string
+          installment_number: number
+          interest_portion: number
+          loan_id: string
+          paid_amount?: number | null
+          paid_at?: string | null
+          principal_portion: number
+          status?: string
+          total_amount: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          due_date?: string
+          id?: string
+          installment_number?: number
+          interest_portion?: number
+          loan_id?: string
+          paid_amount?: number | null
+          paid_at?: string | null
+          principal_portion?: number
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loan_schedule_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loans: {
         Row: {
           applied_at: string

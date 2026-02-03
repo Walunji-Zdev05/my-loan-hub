@@ -69,8 +69,7 @@ export function useRealtimeLoans() {
   }, [queryClient]);
 }
 
-// Specific hook for Expected Loans page - listens to approved (pending disbursement) and active/disbursed loans
-// Also subscribes to repayments for real-time forecast updates
+// Specific hook for Expected Loans page - listens to loans, repayments, and loan_schedule
 export function useRealtimeExpectedLoans() {
   const queryClient = useQueryClient();
 
@@ -163,6 +162,43 @@ export function useRealtimeExpectedLoans() {
           console.log('💰 Repayment deleted:', payload.old);
           queryClient.invalidateQueries({ queryKey: ['loans'] });
           queryClient.invalidateQueries({ queryKey: ['repayments'] });
+        }
+      )
+      // Loan schedule subscriptions for real-time expected installments
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'loan_schedule',
+        },
+        (payload) => {
+          console.log('📅 Loan schedule inserted:', payload.new);
+          queryClient.invalidateQueries({ queryKey: ['loan_schedule'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'loan_schedule',
+        },
+        (payload) => {
+          console.log('📅 Loan schedule updated:', payload.new);
+          queryClient.invalidateQueries({ queryKey: ['loan_schedule'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'loan_schedule',
+        },
+        (payload) => {
+          console.log('📅 Loan schedule deleted:', payload.old);
+          queryClient.invalidateQueries({ queryKey: ['loan_schedule'] });
         }
       )
       .subscribe((status) => {

@@ -8,8 +8,9 @@ import { Calendar, DollarSign, TrendingUp, Clock, FileDown, Loader2, Wifi } from
 import { format, addDays, addMonths, isWithinInterval, startOfToday } from 'date-fns';
 import { useLoans, LoanWithDetails } from '@/hooks/useLoans';
 import { useRealtimeExpectedLoans } from '@/hooks/useRealtimeLoans';
+import { useUpcomingInstallments } from '@/hooks/useLoanSchedule';
 
-type DateFilter = '7' | '30' | '60' | 'all';
+type DateFilter = '7' | '30' | '60' | '90' | 'all';
 
 function ExpectedLoans() {
   const [dateFilter, setDateFilter] = useState<DateFilter>('30');
@@ -20,12 +21,37 @@ function ExpectedLoans() {
 
   const { data: approvedLoans, isLoading: approvedLoading } = useLoans('approved');
   const { data: activeLoans, isLoading: activeLoading } = useLoans(['active', 'disbursed']);
+  
+  // Get scheduled installments from loan_schedule table (for 90+ days)
+  const { data: scheduledInstallments, isLoading: scheduleLoading } = useUpcomingInstallments(365);
 
-  const isLoading = approvedLoading || activeLoading;
+  const isLoading = approvedLoading || activeLoading || scheduleLoading;
 
-  // Generate expected repayments from active loans with projected installments
+  // Use loan_schedule if available, otherwise fall back to calculated projections
   const expectedRepayments = useMemo(() => {
+    // If we have scheduled installments from loan_schedule, use those
+    if (scheduledInstallments && scheduledInstallments.length > 0) {
+      console.log('📅 Using loan_schedule data:', scheduledInstallments.length, 'installments');
+      return scheduledInstallments.map(installment => ({
+        id: installment.id,
+        date: new Date(installment.due_date),
+        clientId: installment.loans?.clients?.first_name ? 
+          `${installment.loans.clients.first_name.charAt(0)}${installment.loans.clients.last_name?.charAt(0) || ''}` : '',
+        clientName: installment.loans?.clients ? 
+          `${installment.loans.clients.first_name} ${installment.loans.clients.last_name}` : 'Unknown',
+        amount: Number(installment.total_amount),
+        principalPortion: Number(installment.principal_portion),
+        interestPortion: Number(installment.interest_portion),
+        type: 'Repayment',
+        loanId: installment.loans?.loan_number || '',
+        installmentNumber: installment.installment_number,
+        status: installment.status,
+      })).sort((a, b) => a.date.getTime() - b.date.getTime());
+    }
+    
+    // Fallback: Generate projections from active loans (for loans without schedule)
     if (!activeLoans) return [];
+    console.log('📅 Using projected data for', activeLoans.length, 'active loans');
     
     const repayments: Array<{
       id: string;
@@ -33,9 +59,12 @@ function ExpectedLoans() {
       clientId: string;
       clientName: string;
       amount: number;
+      principalPortion: number;
+      interestPortion: number;
       type: string;
       loanId: string;
       installmentNumber: number;
+      status: string;
     }> = [];
     
     activeLoans.forEach(loan => {
@@ -54,15 +83,18 @@ function ExpectedLoans() {
           clientId: loan.clients?.client_number || '',
           clientName: `${loan.clients?.first_name || ''} ${loan.clients?.last_name || ''}`,
           amount: monthlyPayment,
+          principalPortion: 0,
+          interestPortion: 0,
           type: 'Repayment',
           loanId: loan.loan_number,
           installmentNumber: i + 1,
+          status: 'projected',
         });
       }
     });
     
     return repayments.sort((a, b) => a.date.getTime() - b.date.getTime());
-  }, [activeLoans]);
+  }, [activeLoans, scheduledInstallments]);
 
   // Filter by date
   const filterByDate = <T extends { date: Date }>(items: T[]): T[] => {
@@ -140,13 +172,25 @@ function ExpectedLoans() {
       <span className="font-mono text-xs text-muted-foreground">{item.clientId}</span>
     )},
     { key: 'client', header: 'Client Name', cell: (item: typeof filteredRepayments[0]) => item.clientName },
-    { key: 'amount', header: 'Amount', cell: (item: typeof filteredRepayments[0]) => formatCurrency(item.amount) },
+    { key: 'principal', header: 'Principal', cell: (item: typeof filteredRepayments[0]) => (
+      <span className="text-xs">{item.principalPortion > 0 ? formatCurrency(item.principalPortion) : '-'}</span>
+    )},
+    { key: 'interest', header: 'Interest', cell: (item: typeof filteredRepayments[0]) => (
+      <span className="text-xs text-muted-foreground">{item.interestPortion > 0 ? formatCurrency(item.interestPortion) : '-'}</span>
+    )},
+    { key: 'amount', header: 'Total', cell: (item: typeof filteredRepayments[0]) => (
+      <span className="font-medium">{formatCurrency(item.amount)}</span>
+    )},
     { key: 'installment', header: 'Installment', cell: (item: typeof filteredRepayments[0]) => (
       <span className="text-xs text-muted-foreground">#{item.installmentNumber}</span>
     )},
-    { key: 'type', header: 'Type', cell: () => (
-      <span className="px-2 py-1 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
-        Repayment
+    { key: 'status', header: 'Status', cell: (item: typeof filteredRepayments[0]) => (
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+        item.status === 'scheduled' ? 'bg-primary/10 text-primary' : 
+        item.status === 'projected' ? 'bg-muted text-muted-foreground' :
+        'bg-secondary text-secondary-foreground'
+      }`}>
+        {item.status === 'scheduled' ? 'Scheduled' : item.status === 'projected' ? 'Projected' : item.status}
       </span>
     )},
     { key: 'loanId', header: 'Loan ID', cell: (item: typeof filteredRepayments[0]) => (
@@ -184,6 +228,7 @@ function ExpectedLoans() {
               <SelectItem value="7">Next 7 days</SelectItem>
               <SelectItem value="30">Next 30 days</SelectItem>
               <SelectItem value="60">Next 60 days</SelectItem>
+              <SelectItem value="90">Next 90 days</SelectItem>
               <SelectItem value="all">All upcoming</SelectItem>
             </SelectContent>
           </Select>
