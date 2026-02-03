@@ -70,12 +70,16 @@ export function useRealtimeLoans() {
 }
 
 // Specific hook for Expected Loans page - listens to approved (pending disbursement) and active/disbursed loans
+// Also subscribes to repayments for real-time forecast updates
 export function useRealtimeExpectedLoans() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    console.log('🔄 Setting up Expected Loans real-time subscriptions...');
+    
     const channel = supabase
       .channel('expected-loans-realtime')
+      // Loans table subscriptions
       .on(
         'postgres_changes',
         {
@@ -84,7 +88,7 @@ export function useRealtimeExpectedLoans() {
           table: 'loans',
         },
         (payload) => {
-          console.log('New loan created:', payload.new);
+          console.log('📋 New loan created:', payload.new);
           queryClient.invalidateQueries({ queryKey: ['loans'] });
         }
       )
@@ -97,10 +101,13 @@ export function useRealtimeExpectedLoans() {
         },
         (payload) => {
           const newStatus = (payload.new as { status?: string })?.status;
-          console.log('Loan updated, new status:', newStatus);
+          const oldStatus = (payload.old as { status?: string })?.status;
+          console.log('📋 Loan updated:', { oldStatus, newStatus, payload: payload.new });
           
           // Refresh queries when status changes to/from approved, disbursed, or active
-          if (['approved', 'disbursed', 'active'].includes(newStatus || '')) {
+          if (['approved', 'disbursed', 'active'].includes(newStatus || '') ||
+              ['approved', 'disbursed', 'active'].includes(oldStatus || '')) {
+            console.log('🔄 Invalidating loans queries due to status change');
             queryClient.invalidateQueries({ queryKey: ['loans'] });
           }
         }
@@ -112,14 +119,58 @@ export function useRealtimeExpectedLoans() {
           schema: 'public',
           table: 'loans',
         },
-        () => {
-          console.log('Loan deleted');
+        (payload) => {
+          console.log('📋 Loan deleted:', payload.old);
           queryClient.invalidateQueries({ queryKey: ['loans'] });
         }
       )
-      .subscribe();
+      // Repayments table subscriptions for real-time forecast updates
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'repayments',
+        },
+        (payload) => {
+          console.log('💰 Repayment inserted:', payload.new);
+          // Invalidate loans to recalculate outstanding balances and forecasts
+          queryClient.invalidateQueries({ queryKey: ['loans'] });
+          queryClient.invalidateQueries({ queryKey: ['repayments'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'repayments',
+        },
+        (payload) => {
+          console.log('💰 Repayment updated:', payload.new);
+          queryClient.invalidateQueries({ queryKey: ['loans'] });
+          queryClient.invalidateQueries({ queryKey: ['repayments'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'repayments',
+        },
+        (payload) => {
+          console.log('💰 Repayment deleted:', payload.old);
+          queryClient.invalidateQueries({ queryKey: ['loans'] });
+          queryClient.invalidateQueries({ queryKey: ['repayments'] });
+        }
+      )
+      .subscribe((status) => {
+        console.log('📡 Expected Loans subscription status:', status);
+      });
 
     return () => {
+      console.log('🔌 Cleaning up Expected Loans real-time subscriptions');
       supabase.removeChannel(channel);
     };
   }, [queryClient]);
