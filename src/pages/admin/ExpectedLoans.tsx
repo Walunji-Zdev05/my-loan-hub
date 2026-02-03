@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DataTable } from '@/components/shared/DataTable';
 import { StatCard } from '@/components/shared/StatCard';
-import { Calendar, DollarSign, TrendingUp, Clock, FileDown, Loader2 } from 'lucide-react';
-import { format, addDays, isWithinInterval, startOfToday } from 'date-fns';
+import { Calendar, DollarSign, TrendingUp, Clock, FileDown, Loader2, Wifi } from 'lucide-react';
+import { format, addDays, addMonths, isWithinInterval, startOfToday } from 'date-fns';
 import { useLoans, LoanWithDetails } from '@/hooks/useLoans';
+import { useRealtimeExpectedLoans } from '@/hooks/useRealtimeLoans';
 
 type DateFilter = '7' | '30' | '60' | 'all';
 
@@ -14,26 +15,53 @@ function ExpectedLoans() {
   const [dateFilter, setDateFilter] = useState<DateFilter>('30');
   const today = startOfToday();
 
+  // Enable real-time subscriptions for expected loans
+  useRealtimeExpectedLoans();
+
   const { data: approvedLoans, isLoading: approvedLoading } = useLoans('approved');
   const { data: activeLoans, isLoading: activeLoading } = useLoans(['active', 'disbursed']);
 
   const isLoading = approvedLoading || activeLoading;
 
-  // Generate expected repayments from active loans
+  // Generate expected repayments from active loans with projected installments
   const expectedRepayments = useMemo(() => {
     if (!activeLoans) return [];
     
-    return activeLoans
-      .filter(loan => loan.next_payment_date)
-      .map(loan => ({
-        id: loan.id,
-        date: new Date(loan.next_payment_date!),
-        clientId: loan.clients?.client_number || '',
-        clientName: `${loan.clients?.first_name || ''} ${loan.clients?.last_name || ''}`,
-        amount: Number(loan.monthly_payment),
-        type: 'Repayment',
-        loanId: loan.loan_number,
-      }));
+    const repayments: Array<{
+      id: string;
+      date: Date;
+      clientId: string;
+      clientName: string;
+      amount: number;
+      type: string;
+      loanId: string;
+      installmentNumber: number;
+    }> = [];
+    
+    activeLoans.forEach(loan => {
+      if (!loan.next_payment_date) return;
+      
+      const startDate = new Date(loan.next_payment_date);
+      const monthlyPayment = Number(loan.monthly_payment);
+      const remainingMonths = Math.ceil(Number(loan.outstanding_balance) / monthlyPayment);
+      
+      // Generate installments for remaining term (up to 12 months ahead)
+      for (let i = 0; i < Math.min(remainingMonths, 12); i++) {
+        const installmentDate = addMonths(startDate, i);
+        repayments.push({
+          id: `${loan.id}-${i}`,
+          date: installmentDate,
+          clientId: loan.clients?.client_number || '',
+          clientName: `${loan.clients?.first_name || ''} ${loan.clients?.last_name || ''}`,
+          amount: monthlyPayment,
+          type: 'Repayment',
+          loanId: loan.loan_number,
+          installmentNumber: i + 1,
+        });
+      }
+    });
+    
+    return repayments.sort((a, b) => a.date.getTime() - b.date.getTime());
   }, [activeLoans]);
 
   // Filter by date
@@ -95,12 +123,12 @@ function ExpectedLoans() {
     { key: 'client', header: 'Client', cell: (item: typeof filteredDisbursements[0]) => item.clientName },
     { key: 'amount', header: 'Amount', cell: (item: typeof filteredDisbursements[0]) => formatCurrency(item.amount) },
     { key: 'type', header: 'Type', cell: () => (
-      <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+      <span className="px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
         Disbursement
       </span>
     )},
     { key: 'status', header: 'Status', cell: () => (
-      <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+      <span className="px-2 py-1 rounded-full text-xs font-medium bg-accent text-accent-foreground">
         Approved
       </span>
     )},
@@ -113,8 +141,11 @@ function ExpectedLoans() {
     )},
     { key: 'client', header: 'Client Name', cell: (item: typeof filteredRepayments[0]) => item.clientName },
     { key: 'amount', header: 'Amount', cell: (item: typeof filteredRepayments[0]) => formatCurrency(item.amount) },
+    { key: 'installment', header: 'Installment', cell: (item: typeof filteredRepayments[0]) => (
+      <span className="text-xs text-muted-foreground">#{item.installmentNumber}</span>
+    )},
     { key: 'type', header: 'Type', cell: () => (
-      <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
+      <span className="px-2 py-1 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
         Repayment
       </span>
     )},
@@ -134,9 +165,15 @@ function ExpectedLoans() {
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col gap-3 sm:gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Expected Loans</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">Upcoming disbursements and expected repayments</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Expected Loans</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">Upcoming disbursements and expected repayments</p>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Wifi className="h-3 w-3 text-green-500 animate-pulse" />
+            <span>Live updates</span>
+          </div>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <Select value={dateFilter} onValueChange={(value: DateFilter) => setDateFilter(value)}>
