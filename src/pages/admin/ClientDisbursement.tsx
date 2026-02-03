@@ -21,6 +21,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { useLoans, useUpdateLoan, LoanWithDetails } from '@/hooks/useLoans';
 import { useRecordFeePayment, useLoanFeeStatus, PaymentMethod } from '@/hooks/useFeePayments';
+import { useGenerateSchedule } from '@/hooks/useLoanSchedule';
 import { ReceiptUpload } from '@/components/admin/ReceiptUpload';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
@@ -30,6 +31,7 @@ export default function ClientDisbursement() {
   const { data: applications, isLoading } = useLoans('approved');
   const updateLoan = useUpdateLoan();
   const recordFee = useRecordFeePayment();
+  const generateSchedule = useGenerateSchedule();
   
   const [selectedApp, setSelectedApp] = useState<LoanWithDetails | null>(null);
   const [showDetails, setShowDetails] = useState(false);
@@ -68,11 +70,31 @@ export default function ClientDisbursement() {
 
   const handleDisburse = async (app: LoanWithDetails) => {
     try {
+      // First update loan status to disbursed
       await updateLoan.mutateAsync({
         id: app.id,
         status: 'disbursed',
         disbursed_at: new Date().toISOString(),
       });
+      
+      // Generate repayment schedule via Edge Function
+      try {
+        console.log('📅 Generating repayment schedule for loan:', app.id);
+        const scheduleResult = await generateSchedule.mutateAsync(app.id);
+        console.log('📅 Schedule generated:', scheduleResult);
+        toast({
+          title: 'Repayment Schedule Created',
+          description: `Generated ${scheduleResult?.installments || app.term_months} installments`,
+        });
+      } catch (scheduleError) {
+        console.error('Failed to generate schedule:', scheduleError);
+        toast({
+          title: 'Warning',
+          description: 'Loan disbursed but schedule generation failed. Please retry.',
+          variant: 'destructive',
+        });
+      }
+      
       setShowDetails(false);
       setSelectedApp(null);
       toast({

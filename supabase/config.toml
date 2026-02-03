@@ -1,1 +1,7 @@
 project_id = "nebmsvdvarddytdrzdjz"
+
+[functions.send-notification]
+verify_jwt = false
+
+[functions.generate-repayment-schedule]
+verify_jwt = false
