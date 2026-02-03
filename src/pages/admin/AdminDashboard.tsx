@@ -20,8 +20,12 @@ import { StatCard } from '@/components/shared/StatCard';
 import { Button } from '@/components/ui/button';
 import { useLoanStats, useLoans } from '@/hooks/useLoans';
 import { useClients, useClientStats } from '@/hooks/useClients';
+import { useRealtimeLoans } from '@/hooks/useRealtimeLoans';
 
 export default function AdminDashboard() {
+  // Enable global real-time subscriptions
+  useRealtimeLoans();
+
   const { data: stats, isLoading: statsLoading } = useLoanStats();
   const { data: pendingLoans, isLoading: loansLoading } = useLoans('applied');
   const { data: clients } = useClients();
