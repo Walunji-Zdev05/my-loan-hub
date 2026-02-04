@@ -306,7 +306,8 @@ export default function NewLoanApplication() {
                       ) : (
                         approvedClients.map(client => (
                           <SelectItem key={client.id} value={client.id}>
-                            {client.first_name} {client.last_name} ({client.client_number})
+                            <span className="font-mono text-xs text-muted-foreground mr-2">{client.client_number}</span>
+                            <span className="font-medium">{client.first_name} {client.last_name}</span>
                           </SelectItem>
                         ))
                       )}
