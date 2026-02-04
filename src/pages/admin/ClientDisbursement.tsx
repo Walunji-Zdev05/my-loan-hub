@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, AlertCircle, Eye, DollarSign, Send, Loader2 } from 'lucide-react';
+import { Check, AlertCircle, Eye, DollarSign, Send, Loader2, FileText } from 'lucide-react';
 
 import { DataTable } from '@/components/shared/DataTable';
 import { Button } from '@/components/ui/button';
@@ -23,12 +23,14 @@ import { useLoans, useUpdateLoan, LoanWithDetails } from '@/hooks/useLoans';
 import { useRecordFeePayment, useLoanFeeStatus, PaymentMethod } from '@/hooks/useFeePayments';
 import { useGenerateSchedule } from '@/hooks/useLoanSchedule';
 import { ReceiptUpload } from '@/components/admin/ReceiptUpload';
+import { RepaymentScheduleView } from '@/components/admin/RepaymentScheduleView';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 import { sendNotification } from '@/hooks/useNotifications';
 
 export default function ClientDisbursement() {
   const { data: applications, isLoading } = useLoans('approved');
+  const { data: disbursedLoans } = useLoans('disbursed');
   const updateLoan = useUpdateLoan();
   const recordFee = useRecordFeePayment();
   const generateSchedule = useGenerateSchedule();
@@ -36,6 +38,7 @@ export default function ClientDisbursement() {
   const [selectedApp, setSelectedApp] = useState<LoanWithDetails | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
+  const [scheduleViewLoan, setScheduleViewLoan] = useState<LoanWithDetails | null>(null);
 
   const formatDate = (date: string) =>
     new Date(date).toLocaleDateString('en-MW', {
@@ -124,6 +127,10 @@ export default function ClientDisbursement() {
   };
 
   const totalPendingDisbursement = applications?.reduce((sum, a) => sum + Number(a.principal_amount), 0) || 0;
+  const readyToDisburseCount = applications?.filter(app => {
+    // Count loans where approval fee is paid (we'll need to check this properly)
+    return true; // Placeholder - the FeeStatus component handles the actual check
+  }).length || 0;
 
   const columns = [
     {
@@ -317,6 +324,57 @@ export default function ClientDisbursement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Recently Disbursed Loans with Schedule View */}
+      {disbursedLoans && disbursedLoans.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Recently Disbursed</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {disbursedLoans.slice(0, 5).map((loan) => (
+                <div
+                  key={loan.id}
+                  className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                >
+                  <div>
+                    <p className="font-medium">
+                      {loan.clients?.first_name} {loan.clients?.last_name}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {loan.loan_number} • {formatCurrency(Number(loan.principal_amount))}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setScheduleViewLoan(loan)}
+                  >
+                    <FileText className="h-4 w-4 mr-1" />
+                    View Schedule
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Repayment Schedule View Dialog */}
+      {scheduleViewLoan && (
+        <RepaymentScheduleView
+          loanId={scheduleViewLoan.id}
+          loanNumber={scheduleViewLoan.loan_number}
+          clientName={`${scheduleViewLoan.clients?.first_name || ''} ${scheduleViewLoan.clients?.last_name || ''}`}
+          principalAmount={Number(scheduleViewLoan.principal_amount)}
+          interestRate={scheduleViewLoan.interest_rate}
+          termMonths={scheduleViewLoan.term_months}
+          productName={scheduleViewLoan.loan_products?.name || 'N/A'}
+          open={!!scheduleViewLoan}
+          onOpenChange={(open) => !open && setScheduleViewLoan(null)}
+        />
+      )}
     </div>
   );
 }
