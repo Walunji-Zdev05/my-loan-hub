@@ -102,10 +102,20 @@ export default function Ledger() {
       ),
     },
     {
-      key: 'client',
-      header: 'Client',
+      key: 'clientId',
+      header: 'Client ID',
       cell: (entry: LedgerEntryWithDetails & { runningTotal: number }) => (
-        <span className="text-sm text-muted-foreground">
+        <span className="font-mono text-xs text-muted-foreground">
+          {entry.clients?.client_number || 'N/A'}
+        </span>
+      ),
+      hideOnMobile: true,
+    },
+    {
+      key: 'client',
+      header: 'Client Name',
+      cell: (entry: LedgerEntryWithDetails & { runningTotal: number }) => (
+        <span className="text-sm">
           {entry.clients ? `${entry.clients.first_name} ${entry.clients.last_name}` : entry.loans?.loan_number || 'N/A'}
         </span>
       ),

@@ -35,8 +35,7 @@ function ExpectedLoans() {
       return scheduledInstallments.map(installment => ({
         id: installment.id,
         date: new Date(installment.due_date),
-        clientId: installment.loans?.clients?.first_name ? 
-          `${installment.loans.clients.first_name.charAt(0)}${installment.loans.clients.last_name?.charAt(0) || ''}` : '',
+        clientId: installment.loans?.clients?.client_number || '',
         clientName: installment.loans?.clients ? 
           `${installment.loans.clients.first_name} ${installment.loans.clients.last_name}` : 'Unknown',
         amount: Number(installment.total_amount),
@@ -111,6 +110,7 @@ function ExpectedLoans() {
     return approvedLoans.map(loan => ({
       id: loan.id,
       date: new Date(), // Pending disbursement
+      clientId: loan.clients?.client_number || '',
       clientName: `${loan.clients?.first_name || ''} ${loan.clients?.last_name || ''}`,
       amount: Number(loan.principal_amount),
       type: 'Disbursement',
@@ -152,7 +152,10 @@ function ExpectedLoans() {
 
   const disbursementColumns = [
     { key: 'date', header: 'Date', cell: (item: typeof filteredDisbursements[0]) => format(item.date, 'MMM dd, yyyy') },
-    { key: 'client', header: 'Client', cell: (item: typeof filteredDisbursements[0]) => item.clientName },
+    { key: 'clientId', header: 'Client ID', cell: (item: typeof filteredDisbursements[0]) => (
+      <span className="font-mono text-xs text-muted-foreground">{item.clientId}</span>
+    )},
+    { key: 'client', header: 'Client Name', cell: (item: typeof filteredDisbursements[0]) => item.clientName },
     { key: 'amount', header: 'Amount', cell: (item: typeof filteredDisbursements[0]) => formatCurrency(item.amount) },
     { key: 'type', header: 'Type', cell: () => (
       <span className="px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">

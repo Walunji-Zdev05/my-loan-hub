@@ -19,7 +19,7 @@ export interface LoanScheduleEntry {
 export interface LoanScheduleWithDetails extends LoanScheduleEntry {
   loans: {
     loan_number: string;
-    clients: { first_name: string; last_name: string } | null;
+    clients: { first_name: string; last_name: string; client_number: string } | null;
   } | null;
 }
 
@@ -31,7 +31,7 @@ export function useLoanSchedule(loanId?: string) {
         .from('loan_schedule')
         .select(`
           *,
-          loans(loan_number, clients(first_name, last_name))
+          loans(loan_number, clients(first_name, last_name, client_number))
         `)
         .order('due_date', { ascending: true });
       
@@ -59,7 +59,7 @@ export function useUpcomingInstallments(days: number = 30) {
         .from('loan_schedule')
         .select(`
           *,
-          loans(loan_number, clients(first_name, last_name))
+          loans(loan_number, clients(first_name, last_name, client_number))
         `)
         .eq('status', 'scheduled')
         .gte('due_date', today.toISOString().split('T')[0])

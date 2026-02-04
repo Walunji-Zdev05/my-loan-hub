@@ -21,6 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 interface RepaymentScheduleViewProps {
   loanId: string;
   loanNumber: string;
+  clientId: string;
   clientName: string;
   principalAmount: number;
   interestRate: number;
@@ -33,6 +34,7 @@ interface RepaymentScheduleViewProps {
 export function RepaymentScheduleView({
   loanId,
   loanNumber,
+  clientId,
   clientName,
   principalAmount,
   interestRate,
@@ -193,12 +195,16 @@ export function RepaymentScheduleView({
             {/* Loan Info */}
             <div className="info-grid grid grid-cols-2 gap-4 mb-6 p-4 bg-muted/50 rounded-lg">
               <div className="info-item">
-                <label className="text-xs text-muted-foreground font-semibold">Loan Number</label>
-                <span className="font-mono">{loanNumber}</span>
+                <label className="text-xs text-muted-foreground font-semibold">Client ID</label>
+                <span className="font-mono font-semibold">{clientId}</span>
               </div>
               <div className="info-item">
                 <label className="text-xs text-muted-foreground font-semibold">Client Name</label>
                 <span>{clientName}</span>
+              </div>
+              <div className="info-item">
+                <label className="text-xs text-muted-foreground font-semibold">Loan Number</label>
+                <span className="font-mono">{loanNumber}</span>
               </div>
               <div className="info-item">
                 <label className="text-xs text-muted-foreground font-semibold">Loan Product</label>

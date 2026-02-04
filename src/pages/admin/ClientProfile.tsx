@@ -334,7 +334,12 @@ export default function ClientProfile() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold">Client Profile</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold">Client Profile</h1>
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-mono font-semibold bg-primary/10 text-primary">
+              {client.client_number}
+            </span>
+          </div>
           <p className="mt-1 text-muted-foreground">
             View detailed client information and performance metrics
           </p>

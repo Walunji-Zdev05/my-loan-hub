@@ -134,6 +134,13 @@ export default function ClientDisbursement() {
 
   const columns = [
     {
+      key: 'client_number',
+      header: 'Client ID',
+      cell: (app: LoanWithDetails) => (
+        <span className="font-mono text-xs text-muted-foreground">{app.clients?.client_number}</span>
+      ),
+    },
+    {
       key: 'loan_number',
       header: 'Loan ID',
       cell: (app: LoanWithDetails) => <span className="font-medium font-mono text-sm">{app.loan_number}</span>,
@@ -266,6 +273,10 @@ export default function ClientDisbursement() {
                 <h4 className="font-medium">Client Information</h4>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
+                    <span className="text-muted-foreground">Client ID:</span>
+                    <p className="font-mono font-medium">{selectedApp.clients?.client_number}</p>
+                  </div>
+                  <div>
                     <span className="text-muted-foreground">Name:</span>
                     <p className="font-medium">{selectedApp.clients?.first_name} {selectedApp.clients?.last_name}</p>
                   </div>
@@ -340,6 +351,7 @@ export default function ClientDisbursement() {
                 >
                   <div>
                     <p className="font-medium">
+                      <span className="font-mono text-xs text-muted-foreground mr-2">{loan.clients?.client_number}</span>
                       {loan.clients?.first_name} {loan.clients?.last_name}
                     </p>
                     <p className="text-sm text-muted-foreground">
@@ -366,6 +378,7 @@ export default function ClientDisbursement() {
         <RepaymentScheduleView
           loanId={scheduleViewLoan.id}
           loanNumber={scheduleViewLoan.loan_number}
+          clientId={scheduleViewLoan.clients?.client_number || 'N/A'}
           clientName={`${scheduleViewLoan.clients?.first_name || ''} ${scheduleViewLoan.clients?.last_name || ''}`}
           principalAmount={Number(scheduleViewLoan.principal_amount)}
           interestRate={scheduleViewLoan.interest_rate}
