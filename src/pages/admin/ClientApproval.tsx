@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Check, AlertCircle, Eye, DollarSign, Loader2, X } from 'lucide-react';
+import { Check, AlertCircle, Eye, DollarSign, Loader2, X, CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
 
 import { DataTable } from '@/components/shared/DataTable';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { useLoans, useUpdateLoan, LoanWithDetails } from '@/hooks/useLoans';
 import { useRecordFeePayment, useLoanFeeStatus, PaymentMethod } from '@/hooks/useFeePayments';
 import { ReceiptUpload } from '@/components/admin/ReceiptUpload';
+import { Input } from '@/components/ui/input';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 
@@ -39,6 +43,8 @@ export default function ClientApproval() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [feeConfirmed, setFeeConfirmed] = useState(false);
   const [receiptUploaded, setReceiptUploaded] = useState(false);
+  const [customFeeAmount, setCustomFeeAmount] = useState<string>('');
+  const [customFeeDate, setCustomFeeDate] = useState<Date | undefined>(undefined);
 
   const formatDate = (date: string) =>
     new Date(date).toLocaleDateString('en-MW', {
@@ -50,13 +56,15 @@ export default function ClientApproval() {
   const formatCurrency = (amount: number) =>
     `K${amount.toLocaleString()}`;
 
-  const handleConfirmAppFee = async (app: LoanWithDetails) => {
+  const handleConfirmAppFee = async (app: LoanWithDetails, overrideAmount?: number, overrideDate?: Date) => {
     try {
+      const feeAmount = overrideAmount ?? Number(app.loan_products?.application_fee || 0);
       await recordFee.mutateAsync({
         loanId: app.id,
         feeType: 'application_fee',
-        amount: Number(app.loan_products?.application_fee || 0),
+        amount: feeAmount,
         paymentMethod,
+        paidAt: overrideDate ? overrideDate.toISOString() : undefined,
       });
       toast({
         title: 'Application Fee Confirmed',
@@ -295,13 +303,22 @@ export default function ClientApproval() {
                 app={selectedApp}
                 paymentMethod={paymentMethod}
                 onPaymentMethodChange={(v) => setPaymentMethod(v as PaymentMethod)}
+                customAmount={customFeeAmount}
+                onCustomAmountChange={setCustomFeeAmount}
+                customDate={customFeeDate}
+                onCustomDateChange={setCustomFeeDate}
               />
             </div>
           )}
           <DialogFooter>
             <ApprovalActions 
               app={selectedApp}
-              onConfirmFee={() => selectedApp && handleConfirmAppFee(selectedApp)}
+              onConfirmFee={() => {
+                if (selectedApp) {
+                  const amt = customFeeAmount ? Number(customFeeAmount) : undefined;
+                  handleConfirmAppFee(selectedApp, amt, customFeeDate);
+                }
+              }}
               onApprove={() => selectedApp && handleApprove(selectedApp.id)}
               onReject={() => setShowRejectDialog(true)}
               isPending={updateLoan.isPending || recordFee.isPending}
@@ -399,22 +416,29 @@ function ApplicationFeeSection({
   app,
   paymentMethod,
   onPaymentMethodChange,
+  customAmount,
+  onCustomAmountChange,
+  customDate,
+  onCustomDateChange,
 }: {
   app: LoanWithDetails;
   paymentMethod: PaymentMethod;
   onPaymentMethodChange: (value: string) => void;
+  customAmount: string;
+  onCustomAmountChange: (value: string) => void;
+  customDate: Date | undefined;
+  onCustomDateChange: (date: Date | undefined) => void;
 }) {
   const { data: feeStatus } = useLoanFeeStatus(app.id);
-  const appFee = Number(app.loan_products?.application_fee || 0);
+  const defaultFee = Number(app.loan_products?.application_fee || 0);
   
-  // Show status if already paid
   if (feeStatus?.applicationFeePaid) {
     return (
       <div className="flex items-center justify-between p-4 rounded-lg bg-success/10">
         <div className="flex items-center gap-2">
           <Check className="h-5 w-5 text-success" />
           <span className="text-success">
-            Application Fee: K{appFee.toLocaleString()} - Paid
+            Application Fee - Paid
           </span>
         </div>
       </div>
@@ -425,11 +449,49 @@ function ApplicationFeeSection({
     <div className="space-y-4 rounded-lg border p-4">
       <div className="flex items-center justify-between">
         <h4 className="font-medium">Confirm Application Fee</h4>
-        <span className="text-sm font-medium text-warning">
-          K{appFee.toLocaleString()}
+        <span className="text-xs text-muted-foreground">
+          Default: K{defaultFee.toLocaleString()}
         </span>
       </div>
       
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label>Fee Amount</Label>
+          <Input
+            type="number"
+            placeholder={defaultFee.toString()}
+            value={customAmount}
+            onChange={(e) => onCustomAmountChange(e.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Payment Date</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !customDate && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {customDate ? format(customDate, "PPP") : "Today"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={customDate}
+                onSelect={onCustomDateChange}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
+
       <div className="space-y-2">
         <Label>Payment Method</Label>
         <Select value={paymentMethod} onValueChange={onPaymentMethodChange}>

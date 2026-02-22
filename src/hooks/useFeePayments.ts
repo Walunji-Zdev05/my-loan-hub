@@ -38,12 +38,14 @@ export function useRecordFeePayment() {
       amount,
       paymentMethod,
       notes,
+      paidAt,
     }: {
       loanId: string;
       feeType: FeeType;
       amount: number;
       paymentMethod: PaymentMethod;
       notes?: string;
+      paidAt?: string;
     }) => {
       const { data, error } = await supabase
         .from('fees_payments')
@@ -53,6 +55,7 @@ export function useRecordFeePayment() {
           amount,
           payment_method: paymentMethod,
           notes,
+          ...(paidAt ? { paid_at: paidAt } : {}),
         })
         .select()
         .single();
