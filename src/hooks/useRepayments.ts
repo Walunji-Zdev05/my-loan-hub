@@ -84,9 +84,9 @@ export function useRecordPayment() {
       
       // Update loan outstanding balance
       const newBalance = Math.max(0, Number(loan.outstanding_balance) - amount);
-      const newStatus = newBalance <= 0 ? 'paid' : undefined;
+      const newStatus = newBalance <= 0 ? ('paid' as const) : undefined;
       
-      const updateData: Record<string, unknown> = { outstanding_balance: newBalance };
+      const updateData: { outstanding_balance: number; status?: 'paid'; paid_at?: string } = { outstanding_balance: newBalance };
       if (newStatus) {
         updateData.status = newStatus;
         updateData.paid_at = new Date().toISOString();
