@@ -521,7 +521,18 @@ function ApprovalFeeSection({
 }) {
   const { data: feeStatus } = useLoanFeeStatus(app.id);
   const defaultFee = Number(app.loan_products?.approval_fee || 0);
-  
+  const principal = Number(app.principal_amount || 0);
+  const [feeMode, setFeeMode] = useState<'amount' | 'percent'>('amount');
+  const [percentValue, setPercentValue] = useState('');
+
+  const handlePercentChange = (value: string) => {
+    setPercentValue(value);
+    const pct = parseFloat(value);
+    onCustomAmountChange(
+      isNaN(pct) ? '' : ((principal * pct) / 100).toFixed(2)
+    );
+  };
+
   if (feeStatus?.approvalFeePaid) return null;
   
   return (
@@ -535,13 +546,40 @@ function ApprovalFeeSection({
       
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
-          <Label>Fee Amount</Label>
-          <Input
-            type="number"
-            placeholder={defaultFee.toString()}
-            value={customAmount}
-            onChange={(e) => onCustomAmountChange(e.target.value)}
-          />
+          <div className="flex items-center justify-between">
+            <Label>{feeMode === 'amount' ? 'Fee Amount (K)' : 'Fee (% of loan)'}</Label>
+            <button
+              type="button"
+              className="text-xs text-primary underline"
+              onClick={() => {
+                setFeeMode(feeMode === 'amount' ? 'percent' : 'amount');
+                setPercentValue('');
+                onCustomAmountChange('');
+              }}
+            >
+              {feeMode === 'amount' ? 'Use %' : 'Use amount'}
+            </button>
+          </div>
+          {feeMode === 'amount' ? (
+            <Input
+              type="number"
+              placeholder={defaultFee.toString()}
+              value={customAmount}
+              onChange={(e) => onCustomAmountChange(e.target.value)}
+            />
+          ) : (
+            <>
+              <Input
+                type="number"
+                placeholder="10"
+                value={percentValue}
+                onChange={(e) => handlePercentChange(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                = K{Number(customAmount || 0).toLocaleString()}
+              </p>
+            </>
+          )}
         </div>
         <div className="space-y-2">
           <Label>Payment Date</Label>
