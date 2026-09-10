@@ -102,40 +102,42 @@ export default function NewLoanApplication() {
     return null;
   }, [selectedProduct, termMonths, termNum]);
 
-  // Calculate loan details
+  // Calculate loan details (weekly installments; term is in months)
   const loanCalculation = useMemo(() => {
     if (!selectedProduct || !amountNum || !termNum) return null;
 
     const principal = amountNum;
-    const rate = selectedProduct.interest_rate / 100;
+    const rate = selectedProduct.interest_rate / 100; // per month
+    const weeks = Math.max(1, Math.round((termNum * 52) / 12));
     let totalInterest = 0;
     let totalAmount = 0;
-    let monthlyPayment = 0;
+    let weeklyPayment = 0;
 
     if (selectedProduct.interest_type === 'flat_rate') {
       totalInterest = principal * rate * termNum;
       totalAmount = principal + totalInterest;
-      monthlyPayment = totalAmount / termNum;
+      weeklyPayment = totalAmount / weeks;
     } else {
-      // Reducing balance (amortized)
-      const monthlyRate = rate;
-      if (monthlyRate === 0) {
-        monthlyPayment = principal / termNum;
+      // Reducing balance (amortized, weekly rate equivalent)
+      const weeklyRate = rate * (12 / 52);
+      if (weeklyRate === 0) {
+        weeklyPayment = principal / weeks;
         totalAmount = principal;
         totalInterest = 0;
       } else {
-        monthlyPayment = (principal * monthlyRate * Math.pow(1 + monthlyRate, termNum)) / 
-                         (Math.pow(1 + monthlyRate, termNum) - 1);
-        totalAmount = monthlyPayment * termNum;
+        const factor = Math.pow(1 + weeklyRate, weeks);
+        weeklyPayment = (principal * weeklyRate * factor) / (factor - 1);
+        totalAmount = weeklyPayment * weeks;
         totalInterest = totalAmount - principal;
       }
     }
 
     return {
       principal,
+      weeks,
       totalInterest: Math.round(totalInterest * 100) / 100,
       totalAmount: Math.round(totalAmount * 100) / 100,
-      monthlyPayment: Math.round(monthlyPayment * 100) / 100,
+      weeklyPayment: Math.round(weeklyPayment * 100) / 100,
       applicationFee: selectedProduct.application_fee,
       approvalFee: selectedProduct.approval_fee,
     };
