@@ -230,7 +230,7 @@ export default function NewLoanApplication() {
         interest_type: selectedProduct.interest_type,
         term_months: termNum,
         total_amount: loanCalculation.totalAmount,
-        monthly_payment: loanCalculation.monthlyPayment,
+        monthly_payment: loanCalculation.weeklyPayment,
         outstanding_balance: loanCalculation.totalAmount,
         status: 'applied',
         purpose,
@@ -534,8 +534,8 @@ export default function NewLoanApplication() {
                         <span className="font-bold text-primary">{formatCurrency(loanCalculation.totalAmount)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Monthly Installment</span>
-                        <span className="font-semibold text-success">{formatCurrency(loanCalculation.monthlyPayment)}</span>
+                        <span className="text-muted-foreground">Weekly Installment ({loanCalculation.weeks} weeks)</span>
+                        <span className="font-semibold text-success">{formatCurrency(loanCalculation.weeklyPayment)}</span>
                       </div>
                     </div>
 
