@@ -26,71 +26,86 @@ interface ScheduleEntry {
   status: string;
 }
 
+// Weekly-only repayment schedules. Term is still expressed in months,
+// so the number of weekly installments is derived from the term.
+function weeksForTerm(termMonths: number): number {
+  return Math.max(1, Math.round((termMonths * 52) / 12));
+}
+
+function addWeeks(date: Date, weeks: number): Date {
+  const d = new Date(date);
+  d.setDate(d.getDate() + weeks * 7);
+  return d;
+}
+
 function generateFlatRateSchedule(loan: LoanData): ScheduleEntry[] {
   const schedule: ScheduleEntry[] = [];
   const disbursedDate = new Date(loan.disbursed_at);
-  
+  const weeks = weeksForTerm(loan.term_months);
+
   // For flat rate, interest is calculated upfront and distributed evenly
   const totalInterest = Number(loan.total_amount) - Number(loan.principal_amount);
-  const monthlyInterest = totalInterest / loan.term_months;
-  const monthlyPrincipal = Number(loan.principal_amount) / loan.term_months;
-  const monthlyPayment = monthlyPrincipal + monthlyInterest;
-  
-  for (let i = 1; i <= loan.term_months; i++) {
-    const dueDate = new Date(disbursedDate);
-    dueDate.setMonth(dueDate.getMonth() + i);
-    
+  const weeklyInterest = totalInterest / weeks;
+  const weeklyPrincipal = Number(loan.principal_amount) / weeks;
+  const weeklyPayment = weeklyPrincipal + weeklyInterest;
+
+  for (let i = 1; i <= weeks; i++) {
+    const dueDate = addWeeks(disbursedDate, i);
+
     schedule.push({
       loan_id: loan.id,
       installment_number: i,
       due_date: dueDate.toISOString().split('T')[0],
-      principal_portion: Math.round(monthlyPrincipal * 100) / 100,
-      interest_portion: Math.round(monthlyInterest * 100) / 100,
-      total_amount: Math.round(monthlyPayment * 100) / 100,
+      principal_portion: Math.round(weeklyPrincipal * 100) / 100,
+      interest_portion: Math.round(weeklyInterest * 100) / 100,
+      total_amount: Math.round(weeklyPayment * 100) / 100,
       status: 'scheduled',
     });
   }
-  
+
   return schedule;
 }
 
 function generateReducingBalanceSchedule(loan: LoanData): ScheduleEntry[] {
   const schedule: ScheduleEntry[] = [];
   const disbursedDate = new Date(loan.disbursed_at);
-  
-  // Monthly interest rate
-  const monthlyRate = Number(loan.interest_rate) / 100 / 12;
+  const weeks = weeksForTerm(loan.term_months);
+
+  // interest_rate is per month; convert to an equivalent weekly rate
+  const weeklyRate = (Number(loan.interest_rate) / 100) * (12 / 52);
   const principal = Number(loan.principal_amount);
-  
-  // Calculate EMI using reducing balance formula
-  // EMI = P * r * (1+r)^n / ((1+r)^n - 1)
-  const numerator = principal * monthlyRate * Math.pow(1 + monthlyRate, loan.term_months);
-  const denominator = Math.pow(1 + monthlyRate, loan.term_months) - 1;
-  const emi = numerator / denominator;
-  
+
+  // Weekly installment using reducing balance formula
+  // PMT = P * r * (1+r)^n / ((1+r)^n - 1)
+  let installment: number;
+  if (weeklyRate === 0) {
+    installment = principal / weeks;
+  } else {
+    const factor = Math.pow(1 + weeklyRate, weeks);
+    installment = (principal * weeklyRate * factor) / (factor - 1);
+  }
+
   let remainingBalance = principal;
-  
-  for (let i = 1; i <= loan.term_months; i++) {
-    const dueDate = new Date(disbursedDate);
-    dueDate.setMonth(dueDate.getMonth() + i);
-    
-    // Interest for this month on remaining balance
-    const interestPortion = remainingBalance * monthlyRate;
-    const principalPortion = emi - interestPortion;
-    
+
+  for (let i = 1; i <= weeks; i++) {
+    const dueDate = addWeeks(disbursedDate, i);
+
+    const interestPortion = remainingBalance * weeklyRate;
+    const principalPortion = installment - interestPortion;
+
     schedule.push({
       loan_id: loan.id,
       installment_number: i,
       due_date: dueDate.toISOString().split('T')[0],
       principal_portion: Math.round(principalPortion * 100) / 100,
       interest_portion: Math.round(interestPortion * 100) / 100,
-      total_amount: Math.round(emi * 100) / 100,
+      total_amount: Math.round(installment * 100) / 100,
       status: 'scheduled',
     });
-    
+
     remainingBalance -= principalPortion;
   }
-  
+
   return schedule;
 }
 
