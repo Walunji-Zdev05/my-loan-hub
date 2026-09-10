@@ -70,18 +70,18 @@ function ExpectedLoans() {
       if (!loan.next_payment_date) return;
       
       const startDate = new Date(loan.next_payment_date);
-      const monthlyPayment = Number(loan.monthly_payment);
-      const remainingMonths = Math.ceil(Number(loan.outstanding_balance) / monthlyPayment);
+      const weeklyPayment = Number(loan.monthly_payment); // stores the weekly installment amount
+      const remainingWeeks = Math.ceil(Number(loan.outstanding_balance) / weeklyPayment);
       
-      // Generate installments for remaining term (up to 12 months ahead)
-      for (let i = 0; i < Math.min(remainingMonths, 12); i++) {
-        const installmentDate = addMonths(startDate, i);
+      // Generate weekly installments for remaining term (up to 52 weeks ahead)
+      for (let i = 0; i < Math.min(remainingWeeks, 52); i++) {
+        const installmentDate = addDays(startDate, i * 7);
         repayments.push({
           id: `${loan.id}-${i}`,
           date: installmentDate,
           clientId: loan.clients?.client_number || '',
           clientName: `${loan.clients?.first_name || ''} ${loan.clients?.last_name || ''}`,
-          amount: monthlyPayment,
+          amount: weeklyPayment,
           principalPortion: 0,
           interestPortion: 0,
           type: 'Repayment',
