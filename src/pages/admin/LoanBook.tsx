@@ -52,7 +52,7 @@ export default function LoanBook() {
     const formattedDate = currentDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-');
     const filename = `Loan Book as of ${formattedDate}.csv`;
 
-    const headers = ['Client ID', 'Client Name', 'Loan ID', 'Principal Amount', 'Interest Rate', 'Term (Months)', 'Total Amount', 'Monthly Payment', 'Outstanding Balance', 'Status'];
+    const headers = ['Client ID', 'Client Name', 'Loan ID', 'Principal Amount', 'Interest Rate', 'Term (Months)', 'Total Amount', 'Weekly Payment', 'Outstanding Balance', 'Status'];
     const csvContent = [
       headers.join(','),
       ...filteredData.map(loan => [
@@ -119,7 +119,7 @@ export default function LoanBook() {
     },
     { 
       key: 'monthlyPayment', 
-      header: 'Monthly', 
+      header: 'Weekly', 
       cell: (loan: LoanWithDetails) => formatCurrency(Number(loan.monthly_payment)),
       hideOnMobile: true,
     },
