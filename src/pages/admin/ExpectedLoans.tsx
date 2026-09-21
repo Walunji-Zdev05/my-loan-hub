@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DataTable } from '@/components/shared/DataTable';
 import { StatCard } from '@/components/shared/StatCard';
 import { Calendar, DollarSign, TrendingUp, Clock, FileDown, Loader2, Wifi } from 'lucide-react';
-import { format, addDays, addMonths, isWithinInterval, startOfToday } from 'date-fns';
+import { format, addDays, isWithinInterval, startOfToday } from 'date-fns';
 import { useLoans, LoanWithDetails } from '@/hooks/useLoans';
 import { useRealtimeExpectedLoans } from '@/hooks/useRealtimeLoans';
 import { useUpcomingInstallments } from '@/hooks/useLoanSchedule';
