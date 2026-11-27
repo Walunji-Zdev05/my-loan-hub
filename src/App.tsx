@@ -27,6 +27,7 @@ import LoanBook from "./pages/admin/LoanBook";
 import PortfolioAtRisk from "./pages/admin/PortfolioAtRisk";
 import ExpectedLoans from "./pages/admin/ExpectedLoans";
 import NewLoanApplication from "./pages/admin/NewLoanApplication";
+import StaffManagement from "./pages/admin/StaffManagement";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +47,7 @@ const App = () => (
             {/* Admin Routes - Nested under AdminLayout */}
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
+              <Route path="staff" element={<StaffManagement />} />
               <Route path="clients" element={<ClientsList />} />
               <Route path="clients/new" element={<CreateClient />} />
               <Route path="clients/:clientId" element={<ClientProfile />} />
