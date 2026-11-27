@@ -8,6 +8,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import StaffHome from "./pages/StaffHome";
 
 // Admin pages
 import { AdminLayout } from "./components/layout/AdminLayout";
@@ -39,6 +40,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/approver" element={<StaffHome expectedRole="approver" />} />
+            <Route path="/loan-officer" element={<StaffHome expectedRole="loan_officer" />} />
             
             {/* Admin Routes - Nested under AdminLayout */}
             <Route path="/admin" element={<AdminLayout />}>
