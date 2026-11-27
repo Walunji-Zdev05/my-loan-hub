@@ -55,15 +55,24 @@ const notifications = [
 ];
 
 export function AdminLayout() {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
   const unreadCount = notifications.filter(n => n.unread).length;
+
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Verifying staff access...</div>;
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  if (user?.role !== 'admin') {
-    return <Navigate to={`/${user?.role}`} replace />;
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user.role !== 'admin') {
+    const destination = user.role === 'loan_officer' ? '/loan-officer' : '/approver';
+    return <Navigate to={destination} replace />;
   }
 
   return (
