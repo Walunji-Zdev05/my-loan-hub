@@ -450,7 +450,7 @@ export type Database = {
       is_loan_owner: { Args: { target_loan_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "borrower"
+      app_role: "admin" | "borrower" | "approver" | "loan_officer"
       fee_type: "application_fee" | "approval_fee" | "penalty"
       interest_type: "flat_rate" | "reducing_balance"
       ledger_entry_type:
@@ -595,7 +595,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "borrower"],
+      app_role: ["admin", "borrower", "approver", "loan_officer"],
       fee_type: ["application_fee", "approval_fee", "penalty"],
       interest_type: ["flat_rate", "reducing_balance"],
       ledger_entry_type: [
