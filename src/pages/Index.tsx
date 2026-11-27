@@ -9,11 +9,11 @@ const Index = () => {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated && user) {
-      navigate('/admin');
+      const destination = user.role === 'loan_officer' ? '/loan-officer' : `/${user.role}`;
+      navigate(destination, { replace: true });
     }
   }, [isAuthenticated, user, isLoading, navigate]);
 
-  // Show loading state
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -22,11 +22,7 @@ const Index = () => {
     );
   }
 
-  // Show landing page for non-authenticated users
-  if (!isAuthenticated) {
-    return <LandingPage />;
-  }
-
+  if (!isAuthenticated) return <LandingPage />;
   return null;
 };
 
