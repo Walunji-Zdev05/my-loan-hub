@@ -14,7 +14,8 @@ import {
   AlertTriangle,
   Clock,
   FilePlus,
-  Users2
+  Users2,
+  ShieldCheck
 } from 'lucide-react';
 import {
   Sidebar,
@@ -37,6 +38,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+  { label: 'Staff Management', href: '/admin/staff', icon: ShieldCheck },
   // Client Management
   { label: 'Clients', href: '/admin/clients', icon: Users },
   { label: 'Client Approval', href: '/admin/pending-clients', icon: Users2 },
