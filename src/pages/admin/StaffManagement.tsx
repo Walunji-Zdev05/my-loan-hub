@@ -140,7 +140,7 @@ export default function StaffManagement() {
             </div>
 
             <div className="rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground">
-              Role permissions are enforced by the backend. Assign Admin only to trusted system administrators.
+              Choose the least-privileged role needed for this staff member. Admin access should be limited to trusted system administrators.
             </div>
 
             <Button type="submit" disabled={isSubmitting}>
