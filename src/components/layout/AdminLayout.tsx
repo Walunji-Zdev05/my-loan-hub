@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { LogOut, User, Settings, Bell, AlertCircle, UserCheck, CreditCard, Clock } from 'lucide-react';
+import { getStaffHome } from '@/lib/staffAuth';
 
 const notifications = [
   {
@@ -55,15 +56,23 @@ const notifications = [
 ];
 
 export function AdminLayout() {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
   const unreadCount = notifications.filter(n => n.unread).length;
 
-  if (!isAuthenticated) {
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-pulse text-muted-foreground">Verifying staff access...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !user) {
     return <Navigate to="/login" replace />;
   }
 
-  if (user?.role !== 'admin') {
-    return <Navigate to={`/${user?.role}`} replace />;
+  if (user.role !== 'admin') {
+    return <Navigate to={getStaffHome(user.role)} replace />;
   }
 
   return (

@@ -26,6 +26,8 @@ import LoanBook from "./pages/admin/LoanBook";
 import PortfolioAtRisk from "./pages/admin/PortfolioAtRisk";
 import ExpectedLoans from "./pages/admin/ExpectedLoans";
 import NewLoanApplication from "./pages/admin/NewLoanApplication";
+import StaffManagement from "./pages/admin/StaffManagement";
+import StaffWorkspace from "./pages/staff/StaffWorkspace";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +41,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/approver" element={<StaffWorkspace role="approver" />} />
+            <Route path="/loan-officer" element={<StaffWorkspace role="loan_officer" />} />
             
             {/* Admin Routes - Nested under AdminLayout */}
             <Route path="/admin" element={<AdminLayout />}>
@@ -57,6 +61,7 @@ const App = () => (
               <Route path="par" element={<PortfolioAtRisk />} />
               <Route path="expected" element={<ExpectedLoans />} />
               <Route path="applications/new" element={<NewLoanApplication />} />
+              <Route path="staff" element={<StaffManagement />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />

@@ -40,6 +40,7 @@ const navItems: NavItem[] = [
   // Client Management
   { label: 'Clients', href: '/admin/clients', icon: Users },
   { label: 'Client Approval', href: '/admin/pending-clients', icon: Users2 },
+  { label: 'Staff Management', href: '/admin/staff', icon: UserPlus },
   // Loan Workflow
   { label: 'New Application', href: '/admin/applications/new', icon: FilePlus },
   { label: 'Applications', href: '/admin/applications', icon: ClipboardList },

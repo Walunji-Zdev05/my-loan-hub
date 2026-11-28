@@ -1,21 +1,27 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
+import { isStaffRole, StaffRole } from '@/lib/staffAuth';
 
-export type UserRole = 'borrower' | 'admin' | 'approver' | 'loan_officer';
+export type UserRole = StaffRole;
 
 interface AuthUser {
   id: string;
   name: string;
   email: string;
-  role: UserRole;
+  role: StaffRole;
+}
+
+interface LoginResult {
+  success: boolean;
+  error?: string;
+  role?: StaffRole;
 }
 
 interface AuthContextType {
   user: AuthUser | null;
   session: Session | null;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signup: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string) => Promise<LoginResult>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -23,126 +29,115 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+async function fetchStaffUser(supabaseUser: User): Promise<AuthUser> {
+  const { data, error } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', supabaseUser.id)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error('We could not verify your staff access. Please try again.');
+  }
+
+  if (!data || !isStaffRole(data.role)) {
+    throw new Error('This account does not have staff access. Contact an administrator.');
+  }
+
+  return {
+    id: supabaseUser.id,
+    name: supabaseUser.email?.split('@')[0] || 'Staff',
+    email: supabaseUser.email || '',
+    role: data.role,
+  };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const requestId = useRef(0);
+
+  const resolveSession = useCallback(async (nextSession: Session | null) => {
+    const currentRequest = ++requestId.current;
+
+    if (!nextSession?.user) {
+      setSession(null);
+      setUser(null);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const staffUser = await fetchStaffUser(nextSession.user);
+      if (currentRequest !== requestId.current) return;
+
+      setSession(nextSession);
+      setUser(staffUser);
+    } catch {
+      if (currentRequest !== requestId.current) return;
+
+      setSession(null);
+      setUser(null);
+      await supabase.auth.signOut();
+    } finally {
+      if (currentRequest === requestId.current) {
+        setIsLoading(false);
+      }
+    }
+  }, []);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        fetchUserRole(session.user);
-      } else {
-        setIsLoading(false);
-      }
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      void resolveSession(initialSession);
     });
 
-    // Listen for auth changes - IMPORTANT: no async/await here to prevent deadlock
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      if (session?.user) {
-        // Defer Supabase calls with setTimeout to prevent deadlock
-        setTimeout(() => {
-          fetchUserRole(session.user);
-        }, 0);
-      } else {
-        setUser(null);
-        setIsLoading(false);
-      }
+    // Do not await Supabase calls inside this callback; defer them to avoid deadlocks.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setTimeout(() => {
+        void resolveSession(nextSession);
+      }, 0);
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [resolveSession]);
 
-  const fetchUserRole = async (supabaseUser: User) => {
+  const login = async (email: string, password: string): Promise<LoginResult> => {
     try {
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', supabaseUser.id)
-        .maybeSingle();
-
-      const role: UserRole = data?.role || 'borrower';
-      const userName = supabaseUser.email?.split('@')[0] || 'User';
-      
-      setUser({
-        id: supabaseUser.id,
-        name: userName,
-        email: supabaseUser.email || '',
-        role,
-      });
-    } catch (error) {
-      console.error('Error fetching user role:', error);
-      const userName = supabaseUser.email?.split('@')[0] || 'User';
-      setUser({
-        id: supabaseUser.id,
-        name: userName,
-        email: supabaseUser.email || '',
-        role: 'borrower',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
       if (error) {
         return { success: false, error: error.message };
       }
 
-      return { success: true };
+      const staffUser = await fetchStaffUser(data.user);
+      return { success: true, role: staffUser.role };
     } catch (error) {
-      return { success: false, error: 'An unexpected error occurred' };
-    }
-  };
-
-  const signup = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-
-      if (error) {
-        return { success: false, error: error.message };
-      }
-
-      // Create admin role for new user
-      if (data.user) {
-        await supabase.from('user_roles').insert({
-          user_id: data.user.id,
-          role: 'admin',
-        });
-      }
-
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: 'An unexpected error occurred' };
+      await supabase.auth.signOut();
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Staff sign-in failed. Please try again.',
+      };
     }
   };
 
   const logout = async () => {
+    requestId.current += 1;
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
+    setIsLoading(false);
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
+    <AuthContext.Provider value={{
+      user,
       session,
-      login, 
-      signup,
-      logout, 
-      isAuthenticated: !!session,
+      login,
+      logout,
+      isAuthenticated: !!session && !!user,
       isLoading,
     }}>
       {children}

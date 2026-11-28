@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { getStaffHome } from '@/lib/staffAuth';
 import LandingPage from './LandingPage';
 
 const Index = () => {
@@ -9,20 +10,18 @@ const Index = () => {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated && user) {
-      navigate('/admin');
+      navigate(getStaffHome(user.role), { replace: true });
     }
   }, [isAuthenticated, user, isLoading, navigate]);
 
-  // Show loading state
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
+        <div className="animate-pulse text-muted-foreground">Verifying staff access...</div>
       </div>
     );
   }
 
-  // Show landing page for non-authenticated users
   if (!isAuthenticated) {
     return <LandingPage />;
   }
